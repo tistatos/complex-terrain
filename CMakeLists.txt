@@ -47,12 +47,14 @@ endif()
 find_package(Git REQUIRED)
 find_package(OpenGL REQUIRED)
 find_package(GLEW REQUIRED)
+FIND_PACKAGE(PkgConfig REQUIRED )
+pkg_search_module(GLFW REQUIRED glfw3 )
 
 if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
 #fix all opengl libs
 set(OPENGL_LIBRARY
   ${OPENGL_LIBRARY}
-  -lGL -lGLU -lXrandr -lXext -lX11 -lrt
+  -lGL -lGLU -lXrandr -lXext -lX11 -lrt -lXxf86vm
   ${CMAKE_DL_LIBS}
 )
 #add unix macros
@@ -77,22 +79,22 @@ include_directories(
 
 set(EXT_DEPS
     glm
-    glfw
     pthread
     googletest
     gtest
 )
 
+
+
 set(ALL_LIBS
   ${OPENGL_LIBRARY}
-  ${GLFW_LIBRARIES}
+  ${GLFW_STATIC_LIBRARIES}
   ${GLEW_LIBRARIES}
-  #EXT_DEPS
 )
 
 add_subdirectory(${PROJECT_CXX_DIR})
 add_executable(${PROJECT_NAME} ${MAIN_SOURCE})
-add_dependencies(${PROJECT_NAME} ${EXT_DEPS})
+#add_dependencies(${PROJECT_NAME} ${EXT_DEPS})
 target_link_libraries(${PROJECT_NAME} ${ALL_LIBS})
 ####
 # Testing

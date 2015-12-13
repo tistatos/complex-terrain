@@ -5,8 +5,17 @@
 * @brief [Description Goes Here]
 */
 
+#include "../include/engine.h"
+
 int main(int argc, char* argv[])
 {
-  return 0;
+  const GLFWvidmode* vidmode;
+  GLFWwindow* window;
+  char title[64] = "Complex Terrain";
+
+  double dt;
+  double fps;
+
+  if(!glfwInit()) return -1;
 }
 
