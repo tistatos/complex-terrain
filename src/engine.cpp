@@ -43,6 +43,14 @@ bool CTEngine::initialize()
 
   glewInit();
 
+  float fov = 45.0f;
+  mCamera.setProjectionMatrix(glm::perspective(
+        fov,
+        (float)(vidmode->width/vidmode->height),
+        0.1f,
+        100.0f)
+  );
+
   mRunning = true;
   return true;
 }

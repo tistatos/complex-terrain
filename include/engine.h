@@ -12,7 +12,9 @@
 #include <GLFW/glfw3.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <glm/glm.hpp>
 
+#include "camera.h"
 class CTEngine
 {
 public:
@@ -24,6 +26,7 @@ public:
   void render(double dt);
   bool running() { return mRunning; }
 private:
+  Camera mCamera;
   bool mRunning;
   const GLFWvidmode* vidmode;
   GLFWwindow* mWindow;
