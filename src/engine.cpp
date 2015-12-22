@@ -6,7 +6,7 @@
 */
 
 #include "engine.h"
-
+#include "shader.h"
 CTEngine::CTEngine()
 {
   mRunning = false;
@@ -26,7 +26,6 @@ bool CTEngine::initialize()
 
   mMonitor = glfwGetPrimaryMonitor();
   vidmode = glfwGetVideoMode(mMonitor);
-
   glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
   glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 
@@ -51,6 +50,12 @@ bool CTEngine::initialize()
         100.0f)
   );
 
+  Program p;
+  Shader vert("../shaders/standard.vert", GL_VERTEX_SHADER);
+  Shader frag("../shaders/standard.frag", GL_FRAGMENT_SHADER);
+  p.attach(vert);
+  p.attach(frag);
+  p.linkProgram();
   mRunning = true;
   return true;
 }
@@ -66,6 +71,17 @@ void CTEngine::update(double dt)
     mRunning = false;
     glfwSetWindowShouldClose(mWindow, GL_TRUE);
   }
+
+  glm::vec3 movement;
+
+  if(glfwGetKey(mWindow, GLFW_KEY_W))
+    movement.z += 1.0f;
+  if(glfwGetKey(mWindow, GLFW_KEY_A))
+    movement.z -= 1.0f;
+  if(glfwGetKey(mWindow, GLFW_KEY_S))
+    movement.x += 1.0f;
+  if(glfwGetKey(mWindow, GLFW_KEY_D))
+    movement.x -= 1.0f;
 }
 
 void CTEngine::render(double dt)
