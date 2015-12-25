@@ -18,16 +18,19 @@ public:
   Shader(char* path, GLenum shaderType);
   ~Shader();
   GLuint getID() {return mShaderID; };
+  void reloadShader();
 private:
+  void compileShader(const char* source);
   void getCompileErrors();
   char* readSource(char* path);
   GLuint mShaderID;
+  char* mShaderPath;
 };
 
 class Program {
 public:
   Program();
-  void attach(Shader s) { glAttachShader(mProgramID, s.getID()); };
+  void attach(Shader* s) { glAttachShader(mProgramID, s->getID()); };
   void useProgram() { glUseProgram(mProgramID); };
   void linkProgram();
 private:

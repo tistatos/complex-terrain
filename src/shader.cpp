@@ -20,10 +20,22 @@ long filelength(FILE *file) {
 Shader::Shader(char* path, GLenum shaderType)
 {
   mShaderID = glCreateShader(shaderType);
+  mShaderPath = path;
   const char* source =  readSource(path);
-  glShaderSource(mShaderID, 1, &source, nullptr);
+  compileShader(source);
+  getCompileErrors();
+}
 
+void Shader::compileShader(const char* source)
+{
+  glShaderSource(mShaderID, 1, &source, nullptr);
   glCompileShader(mShaderID);
+}
+
+void Shader::reloadShader()
+{
+  const char* source = readSource(mShaderPath);
+  compileShader(source);
   getCompileErrors();
 }
 

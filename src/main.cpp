@@ -12,7 +12,7 @@
 
 int main(int argc, char* argv[])
 {
-  CTEngine engine;
+  CTEngine engine("Complex Terrain");
   GameTimer timer;
   if(!engine.initialize()) return -1;
   double dt;

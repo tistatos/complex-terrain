@@ -18,7 +18,7 @@
 class CTEngine
 {
 public:
-  CTEngine();
+  CTEngine(char* name);
   ~CTEngine();
   bool initialize();
   void shutdown();

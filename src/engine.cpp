@@ -7,10 +7,10 @@
 
 #include "engine.h"
 #include "shader.h"
-CTEngine::CTEngine()
+CTEngine::CTEngine(char* name)
 {
   mRunning = false;
-  sprintf(mTitle,"Complex Terrain");
+  sprintf(mTitle, name);
 }
 
 CTEngine::~CTEngine()
@@ -53,8 +53,8 @@ bool CTEngine::initialize()
   Program p;
   Shader vert("../shaders/standard.vert", GL_VERTEX_SHADER);
   Shader frag("../shaders/standard.frag", GL_FRAGMENT_SHADER);
-  p.attach(vert);
-  p.attach(frag);
+  p.attach(&vert);
+  p.attach(&frag);
   p.linkProgram();
   mRunning = true;
   return true;
@@ -63,9 +63,9 @@ bool CTEngine::initialize()
 void CTEngine::update(double dt)
 {
   glfwPollEvents();
-
-  sprintf(mTitle,"Complex Terrain, %.4f ms", dt);
-  glfwSetWindowTitle(mWindow, mTitle);
+  char title[64];
+  sprintf(title,"%s, %.4f ms", mTitle, dt);
+  glfwSetWindowTitle(mWindow, title);
   if(glfwGetKey(mWindow, GLFW_KEY_ESCAPE))
   {
     mRunning = false;
@@ -82,12 +82,14 @@ void CTEngine::update(double dt)
     movement.x += 1.0f;
   if(glfwGetKey(mWindow, GLFW_KEY_D))
     movement.x -= 1.0f;
+  mCamera.translate(movement);
 }
 
 void CTEngine::render(double dt)
 {
   glClearColor(0.3f, 0.3f, 0.3f, 0.0f);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
   glfwSwapBuffers(mWindow);
 }
 

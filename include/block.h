@@ -20,6 +20,7 @@ public:
   bool isEmpty() { return mIsEmpty; }
 private:
   bool mIsEmpty;
+
   GLuint mVertexArrayID;
   GLuint mVertexBufferID;
   GLuint mVertexFeedbackID;
