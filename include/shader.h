@@ -12,7 +12,7 @@
 #include <GL/gl.h>
 #include <stdio.h>
 #include <stdlib.h>
-
+#include <iostream>
 class Shader {
 public:
   Shader(char* path, GLenum shaderType);
@@ -29,12 +29,14 @@ private:
 
 class Program {
 public:
-  Program();
+  Program(std::string name);
   void attach(Shader* s) { glAttachShader(mProgramID, s->getID()); };
   void useProgram() { glUseProgram(mProgramID); };
   void linkProgram();
+  std::string getName() { return mProgramName; }
 private:
   GLuint mProgramID;
+  std::string mProgramName;
   void getLinkingError();
 };
 

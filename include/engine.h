@@ -15,6 +15,8 @@
 #include <glm/glm.hpp>
 
 #include "camera.h"
+#include "shaderManager.h"
+
 class CTEngine
 {
 public:
@@ -25,8 +27,11 @@ public:
   void update(double dt);
   void render(double dt);
   bool running() { return mRunning; }
+  ShaderManager& getShaderManager() { return mShaderManager; }
 private:
   Camera mCamera;
+  ShaderManager mShaderManager;
+
   bool mRunning;
   const GLFWvidmode* vidmode;
   GLFWwindow* mWindow;

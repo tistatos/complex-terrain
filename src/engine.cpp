@@ -50,12 +50,6 @@ bool CTEngine::initialize()
         100.0f)
   );
 
-  Program p;
-  Shader vert("../shaders/standard.vert", GL_VERTEX_SHADER);
-  Shader frag("../shaders/standard.frag", GL_FRAGMENT_SHADER);
-  p.attach(&vert);
-  p.attach(&frag);
-  p.linkProgram();
   mRunning = true;
   return true;
 }

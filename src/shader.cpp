@@ -72,9 +72,10 @@ void Shader::getCompileErrors()
   std::cerr << log << std::endl;
 }
 
-Program::Program()
+Program::Program(std::string name)
 {
   mProgramID = glCreateProgram();
+  mProgramName = name;
 }
 
 void Program::linkProgram()
