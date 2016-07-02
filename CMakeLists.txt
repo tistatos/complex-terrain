@@ -94,7 +94,7 @@ set(ALL_LIBS
 
 add_subdirectory(${PROJECT_CXX_DIR})
 add_executable(${PROJECT_NAME} ${MAIN_SOURCE})
-#add_dependencies(${PROJECT_NAME} ${EXT_DEPS})
+add_dependencies(${PROJECT_NAME} ${EXT_DEPS})
 target_link_libraries(${PROJECT_NAME} ${ALL_LIBS})
 ####
 # Testing

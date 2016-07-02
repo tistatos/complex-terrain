@@ -9,6 +9,7 @@ set(glm_CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${glm_INSTALL_DIR})
 ExternalProject_Add(glm
   PREFIX ${glm_PREFIX}
   GIT_REPOSITORY http://github.com/g-truc/glm.git
+  GIT_TAG 0.9.7.0
   CMAKE_ARGS ${glm_CMAKE_ARGS}
   UPDATE_COMMAND ""
   CONFIGURE_COMMAND ""
