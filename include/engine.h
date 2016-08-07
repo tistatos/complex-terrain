@@ -15,7 +15,10 @@
 #include <glm/glm.hpp>
 
 #include "camera.h"
+#include "terrain.h"
 #include "shaderManager.h"
+#include "gameTimer.h"
+
 
 class CTEngine
 {
@@ -24,20 +27,34 @@ public:
   ~CTEngine();
   bool initialize();
   void shutdown();
+
   void update(double dt);
   void render(double dt);
+	void run();
+
   bool running() { return mRunning; }
+
   ShaderManager& getShaderManager() { return mShaderManager; }
 private:
+	Terrain mTerrain;
   Camera mCamera;
+	GameTimer mTimer;
   ShaderManager mShaderManager;
 
   bool mRunning;
+
+	float mFov;
+	float mMovementSpeed;
+	float mLookSpeed;
+
+	float mPreviousMouseX;
+	float mPreviousMouseY;
+
   const GLFWvidmode* vidmode;
   GLFWwindow* mWindow;
   GLFWmonitor* mMonitor;
+
   char mTitle[64];
 };
 
 #endif
-

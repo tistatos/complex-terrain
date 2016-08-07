@@ -7,21 +7,8 @@
 
 #include "camera.h"
 
-Camera::Camera()
-{
+Camera::Camera() {
 }
 
-Camera::~Camera()
-{
+Camera::~Camera() {
 }
-
-void Camera::translate(glm::vec3 trans)
-{
-  mViewMatrix =  glm::translate(mViewMatrix, trans);
-}
-
-void Camera::rotate(glm::mat4 rot)
-{
-  mViewMatrix *= rot;
-}
-

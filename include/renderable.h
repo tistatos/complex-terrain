@@ -8,11 +8,10 @@
 #ifndef __RENDERABLE_H__
 #define __RENDERABLE_H__
 
-class Renderable
+class Renderable : public Entity
 {
 public:
   virtual void render();
 };
 
 #endif
-

@@ -13,20 +13,10 @@
 int main(int argc, char* argv[])
 {
   CTEngine engine("Complex Terrain");
-  GameTimer timer;
   if(!engine.initialize()) return -1;
-  double dt;
-  double fps;
 
-  while (engine.running())
-  {
-    timer.tick();
-    dt = timer.getDeltaTime();
-    engine.update(dt);
-    engine.render(dt);
-  }
+	engine.run();
 
   engine.shutdown();
   return 0;
 }
-

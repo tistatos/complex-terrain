@@ -31,7 +31,7 @@ private:
 class Program {
 public:
   Program(std::string name);
-  void attach(Shader* s) { glAttachShader(mProgramID, s->getID()); };
+  void attach(Shader* s);
   void useProgram() { glUseProgram(mProgramID); };
   void linkProgram();
   std::string getName() { return mProgramName; }
@@ -43,4 +43,3 @@ private:
 
 
 #endif
-

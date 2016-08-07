@@ -8,48 +8,42 @@
 #include "shader.h"
 #include <iostream>
 long filelength(FILE *file) {
-    long numbytes;
-    long savedpos = ftell(file); // Remember where we are
-    fseek(file, 0, SEEK_END);    // Fast forward to the end
-    numbytes = ftell(file);      // Index of last byte in file
-    fseek(file, savedpos, SEEK_SET); // Get back to where we were
+	long numbytes;
+	long savedpos = ftell(file); // Remember where we are
+	fseek(file, 0, SEEK_END);    // Fast forward to the end
+	numbytes = ftell(file);      // Index of last byte in file
+	fseek(file, savedpos, SEEK_SET); // Get back to where we were
 
-    return numbytes;             // This is the file length
+	return numbytes;             // This is the file length
 }
 
-Shader::Shader(char* path, GLenum shaderType)
-{
-  mShaderID = glCreateShader(shaderType);
-  mShaderPath = path;
+Shader::Shader(char* path, GLenum shaderType) {
+	mShaderID = glCreateShader(shaderType);
+	mShaderPath = path;
   const char* source =  readSource(path);
   compileShader(source);
   getCompileErrors();
 }
 
-void Shader::compileShader(const char* source)
-{
+void Shader::compileShader(const char* source) {
   glShaderSource(mShaderID, 1, &source, nullptr);
   glCompileShader(mShaderID);
 }
 
-void Shader::reloadShader()
-{
+void Shader::reloadShader() {
   const char* source = readSource(mShaderPath);
   compileShader(source);
   getCompileErrors();
 }
 
-Shader::~Shader()
-{
+Shader::~Shader() {
   glDeleteShader(mShaderID);
 }
 
-char* Shader::readSource(char* filename)
-{
+char* Shader::readSource(char* filename) {
   FILE *file = fopen(filename, "r");
-  if(file == NULL)
-  {
-    std::cout << "error founding file" << std::endl;
+  if(file == NULL) {
+    std::cout << "error finding file: " << filename << std::endl;
     return 0;
   }
   int bytesinfile = filelength(file);
@@ -60,32 +54,28 @@ char* Shader::readSource(char* filename)
   return buffer;
 }
 
-void Shader::getCompileErrors()
-{
+void Shader::getCompileErrors() {
   GLint status = 0;
   glGetShaderiv(mShaderID, GL_COMPILE_STATUS, &status);
   if (status == GL_TRUE)
     return;
   char log[4096];
   glGetShaderInfoLog(mShaderID, sizeof(log), nullptr, log);
-  std::cerr << "Shader Compile error:" << std::endl;
+  std::cerr << "Shader Compile error - " << mShaderPath << ":" << std::endl;
   std::cerr << log << std::endl;
 }
 
-Program::Program(std::string name)
-{
-  mProgramID = glCreateProgram();
+Program::Program(std::string name) {
+	mProgramID = 0;
   mProgramName = name;
 }
 
-void Program::linkProgram()
-{
-  glLinkProgram(mProgramID);
-  getLinkingError();
+void Program::linkProgram() {
+	glLinkProgram(mProgramID);
+	getLinkingError();
 }
 
-void Program::getLinkingError()
-{
+void Program::getLinkingError() {
   GLint status = 0;
   glGetProgramiv(mProgramID, GL_LINK_STATUS, &status);
   if(status == GL_TRUE)
@@ -93,8 +83,12 @@ void Program::getLinkingError()
 
   char log[4096];
   glGetProgramInfoLog(mProgramID, sizeof(log), nullptr, log);
-  std::cerr << "Progam Link error:" << std::endl;
+  std::cerr << "Program Link error - " << mProgramName << ":" << std::endl;
   std::cerr << log << std::endl;
-
 }
 
+void Program::attach(Shader* s) {
+	if(mProgramID == 0)
+		mProgramID = glCreateProgram();
+	glAttachShader(mProgramID, s->getID());
+}

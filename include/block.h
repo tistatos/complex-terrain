@@ -11,12 +11,11 @@
 #include "engine.h"
 #include "renderable.h"
 
-class Block : public Renderable
+class Block
 {
 public:
   void initializeBlock();
   void clearBlock();
-  void render();
   bool isEmpty() { return mIsEmpty; }
 private:
   bool mIsEmpty;
@@ -30,4 +29,3 @@ private:
 };
 
 #endif
-
