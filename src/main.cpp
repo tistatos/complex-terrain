@@ -12,11 +12,11 @@
 
 int main(int argc, char* argv[])
 {
-  CTEngine engine("Complex Terrain");
-  if(!engine.initialize()) return -1;
+	CTEngine engine("Complex Terrain");
+	if(!engine.initialize()) return -1;
 
 	engine.run();
 
-  engine.shutdown();
-  return 0;
+	engine.shutdown();
+	return 0;
 }

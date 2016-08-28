@@ -12,17 +12,17 @@
 class GameTimer
 {
 public:
-  GameTimer();
-  void tick();
-  const float getDeltaTime();
-  const float getFPS();
+	GameTimer();
+	void tick();
+	const float getDeltaTime();
+	const float getFPS();
 private:
-  double mPrevious;
-  double mCurrent;
-  double mDeltaTime;
-  double mFPS;
-  double mFPSCount;
-  int mFrames;
+	double mPrevious;
+	double mCurrent;
+	double mDeltaTime;
+	double mFPS;
+	double mFPSCount;
+	int mFrames;
 };
 
 #endif

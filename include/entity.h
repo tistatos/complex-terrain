@@ -14,9 +14,10 @@
 class Entity {
 public:
 	glm::mat4 getModelMatrix() { return mModelMatrix; }
+	glm::vec3 getPosition() { return glm::vec3(getModelMatrix()[3]); }
 
-  void translate(glm::vec3 trans);
-  void rotate(glm::mat4 rot);
+	void translate(glm::vec3 trans);
+	void rotate(glm::mat4 rot);
 
 protected:
 	glm::mat4 mModelMatrix;

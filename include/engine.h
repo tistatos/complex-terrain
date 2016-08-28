@@ -14,34 +14,35 @@
 #include <stdlib.h>
 #include <glm/glm.hpp>
 
+#include "gui.h"
 #include "camera.h"
 #include "terrain.h"
 #include "shaderManager.h"
 #include "gameTimer.h"
 
+class GUI;
 
 class CTEngine
 {
 public:
-  CTEngine(char* name);
-  ~CTEngine();
-  bool initialize();
-  void shutdown();
+	CTEngine(char* name);
+	~CTEngine();
+	bool initialize();
+	void shutdown();
 
-  void update(double dt);
-  void render(double dt);
+	void update(double dt);
+	void render(double dt);
 	void run();
 
-  bool running() { return mRunning; }
+	bool running() { return mRunning; }
 
-  ShaderManager& getShaderManager() { return mShaderManager; }
 private:
 	Terrain mTerrain;
-  Camera mCamera;
+	Camera mCamera;
 	GameTimer mTimer;
-  ShaderManager mShaderManager;
+	GUI* mGUI;
 
-  bool mRunning;
+	bool mRunning;
 
 	float mFov;
 	float mMovementSpeed;
@@ -50,11 +51,11 @@ private:
 	float mPreviousMouseX;
 	float mPreviousMouseY;
 
-  const GLFWvidmode* vidmode;
-  GLFWwindow* mWindow;
-  GLFWmonitor* mMonitor;
+	const GLFWvidmode* vidmode;
+	GLFWwindow* mWindow;
+	GLFWmonitor* mMonitor;
 
-  char mTitle[64];
+	char mTitle[64];
 };
 
 #endif

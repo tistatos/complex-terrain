@@ -14,18 +14,18 @@
 class Block
 {
 public:
-  void initializeBlock();
-  void clearBlock();
-  bool isEmpty() { return mIsEmpty; }
+	void initializeBlock();
+	void clearBlock();
+	bool isEmpty() { return mIsEmpty; }
 private:
-  bool mIsEmpty;
+	bool mIsEmpty;
 
-  GLuint mVertexArrayID;
-  GLuint mVertexBufferID;
-  GLuint mVertexFeedbackID;
+	GLuint mVertexArrayID;
+	GLuint mVertexBufferID;
+	GLuint mVertexFeedbackID;
 
-  GLuint mIndexBufferID;
-  GLuint mIndexFeedbackID;
+	GLuint mIndexBufferID;
+	GLuint mIndexFeedbackID;
 };
 
 #endif

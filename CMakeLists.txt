@@ -47,7 +47,9 @@ endif()
 find_package(Git REQUIRED)
 find_package(OpenGL REQUIRED)
 find_package(GLEW REQUIRED)
-FIND_PACKAGE(PkgConfig REQUIRED )
+find_package(PkgConfig REQUIRED)
+find_package(Freetype REQUIRED)
+
 pkg_search_module(GLFW REQUIRED glfw3 )
 
 if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
@@ -67,14 +69,15 @@ add_subdirectory(
 )
 
 set(ext_includes
-  ${GLM_INCLUDE_DIR}
-  ${GLEW_INCLUDE_DIR}
-  ${GLFW_INCLUDE_DIR}
+	${GLM_INCLUDE_DIR}
+	${GLEW_INCLUDE_DIR}
+	${GLFW_INCLUDE_DIR}
+	${FREETYPE_INCLUDE_DIRS}
 )
 
 include_directories(
-        ${ext_includes}
-        ${PROJECT_INCLUDE_DIR}
+	${ext_includes}
+	${PROJECT_INCLUDE_DIR}
 )
 
 set(EXT_DEPS
@@ -82,21 +85,24 @@ set(EXT_DEPS
     pthread
     googletest
     gtest
+		freetype
 )
 
 
 
 set(ALL_LIBS
-  ${OPENGL_LIBRARY}
-  ${GLFW_STATIC_LIBRARIES}
-  ${GLEW_LIBRARIES}
+	${OPENGL_LIBRARY}
+	${GLFW_STATIC_LIBRARIES}
+	${GLEW_LIBRARIES}
+	${FREETYPE_LIBRARIES}
 )
 
 add_subdirectory(${PROJECT_CXX_DIR})
 add_executable(${PROJECT_NAME} ${MAIN_SOURCE})
 add_dependencies(${PROJECT_NAME} ${EXT_DEPS})
 target_link_libraries(${PROJECT_NAME} ${ALL_LIBS})
-####
+
+##
 # Testing
 ##
 
@@ -126,4 +132,3 @@ target_link_libraries(${PROJECT_NAME} ${ALL_LIBS})
 #)
 
 #add_test(test ${PROJECT_TEST_NAME})
-

@@ -7,6 +7,6 @@ in vec2 st;
 out vec4 color;
 
 void main() {
-     color = texture(tex, st);
+		color = texture(tex, st);
 }
 

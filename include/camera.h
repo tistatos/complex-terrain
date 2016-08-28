@@ -15,17 +15,17 @@
 
 class Camera : public Entity {
 public:
-  Camera();
-  ~Camera();
-  void setProjectionMatrix(glm::mat4 proj) { mProjectionMatrix = proj; }
+	Camera();
+	~Camera();
+	void setProjectionMatrix(glm::mat4 proj) { mProjectionMatrix = proj; }
 
-  glm::mat4 getProjectionMatrix() { return mProjectionMatrix; }
-  glm::mat4 getViewMatrix() { return mModelMatrix; }
-  glm::mat4 getViewProjectionMatrix() { return mProjectionMatrix * mModelMatrix; }
+	glm::mat4 getProjectionMatrix() { return mProjectionMatrix; }
+	glm::mat4 getViewMatrix() { return mModelMatrix; }
+	glm::mat4 getViewProjectionMatrix() { return mProjectionMatrix * mModelMatrix; }
 
 
 private:
-  glm::mat4 mProjectionMatrix;
+	glm::mat4 mProjectionMatrix;
 };
 
 #endif

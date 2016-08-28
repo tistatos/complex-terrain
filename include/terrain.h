@@ -9,16 +9,13 @@
 #define __TERRAIN_H__
 
 #include "shader.h"
+#include "shaderManager.h"
 
 class Terrain {
 public:
-	Terrain();
 	void initialize();
 	void render();
 	void update();
-
-private:
-	Program mDensityProgram;
 };
 
 

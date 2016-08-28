@@ -13,32 +13,39 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <iostream>
+#include <vector>
 
 class Shader {
 public:
-  Shader(char* path, GLenum shaderType);
-  ~Shader();
-  GLuint getID() {return mShaderID; };
-  void reloadShader();
+	Shader(char* path, GLenum shaderType);
+	~Shader();
+	GLuint getID() {return mShaderID; };
+	void reloadShader();
 private:
-  void compileShader(const char* source);
-  void getCompileErrors();
-  char* readSource(char* path);
-  GLuint mShaderID;
-  char* mShaderPath;
+	void compileShader(const char* source);
+	void getCompileErrors();
+	char* readSource(char* path);
+	GLuint mShaderID;
+	char* mShaderPath;
 };
 
 class Program {
 public:
-  Program(std::string name);
-  void attach(Shader* s);
-  void useProgram() { glUseProgram(mProgramID); };
-  void linkProgram();
-  std::string getName() { return mProgramName; }
+	Program(std::string name);
+	~Program();
+
+	void attach(Shader* s);
+	void useProgram() { glUseProgram(mProgramID); };
+	void linkProgram();
+	void reload();
+
+	GLuint getProgram() { return mProgramID; }
+	std::string getName() { return mProgramName; }
 private:
-  GLuint mProgramID;
-  std::string mProgramName;
-  void getLinkingError();
+	GLuint mProgramID;
+	std::string mProgramName;
+	void getLinkingError();
+	std::vector<Shader*> mAttachedShaders;
 };
 
 

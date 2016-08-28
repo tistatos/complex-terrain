@@ -7,18 +7,18 @@
 
 #include "terrain.h"
 
-Terrain::Terrain() : mDensityProgram("densityProgram") {
-}
-
 void Terrain::initialize() {
-	Shader* instancedQuad = new Shader(
-			"../shaders/instancedQuad.vert", GL_VERTEX_SHADER);
-	Shader* densityShader = new Shader(
-			"../shaders/density.frag", GL_FRAGMENT_SHADER);
+	//Shader* instancedQuad = new Shader(
+			//"../shaders/instancedQuad.vert", GL_VERTEX_SHADER);
+	//Shader* densityShader = new Shader(
+			//"../shaders/density.frag", GL_FRAGMENT_SHADER);
 
-	mDensityProgram.attach(densityShader);
-	mDensityProgram.attach(instancedQuad);
-	mDensityProgram.linkProgram();
+	//Program* densityProgram = new Program("densityProgram");
+
+	//densityProgram->attach(densityShader);
+	//densityProgram->attach(instancedQuad);
+	//densityProgram->linkProgram();
+	//ShaderManager::getInstance()->addShader(densityProgram);
 }
 
 void Terrain::render() {}

@@ -11,7 +11,7 @@
 class Renderable : public Entity
 {
 public:
-  virtual void render();
+	virtual void render();
 };
 
 #endif

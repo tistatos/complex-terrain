@@ -13,14 +13,15 @@
 class ShaderManager
 {
 public:
-  void addShader(Program* s);
-  Program* getShader(std::string name);
-  ShaderManager();
-  ~ShaderManager();
-
+	void addShader(Program* s);
+	Program* getShader(std::string name);
+	void updateShaders();
+	void disposeShaders();
+	static ShaderManager* getInstance();
 private:
-  ShaderManager* mInstance;
-  std::vector<Program*> mShaders;
+	static ShaderManager* mInstance;
+
+	ShaderManager() { };
+	std::vector<Program*> mShaders;
 };
 #endif
-
