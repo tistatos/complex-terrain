@@ -10,19 +10,25 @@
 
 #include "glm/glm.hpp"
 #include "glm/gtc/matrix_transform.hpp"
+#include "glm/gtx/euler_angles.hpp"
 
 class Entity {
 public:
-	glm::mat4 getModelMatrix() { return mModelMatrix; }
-	glm::vec3 getPosition() { return glm::vec3(getModelMatrix()[3]); }
+	Entity();
+	const glm::mat4 getModelMatrix() const;
+	const glm::vec3& getPosition() const { return mPosition; }
+	const glm::vec3& getRotation() const { return mRotation; }
+
+	void setPosition(const glm::vec3& position) { mPosition = position; }
+	void setRotation(const glm::vec3& rotation) { mRotation = rotation; }
 
 	void translate(glm::vec3 trans);
-	void rotate(glm::mat4 rot);
+	void rotate(glm::vec3 rot);
 
 protected:
-	glm::mat4 mModelMatrix;
+	glm::vec3 mPosition;
+	glm::vec3 mRotation;
+	glm::vec3 mScale;
 };
-
-
 
 #endif

@@ -6,6 +6,8 @@
 */
 
 #include "shaderManager.h"
+#include "shader.h"
+
 ShaderManager* ShaderManager::mInstance = 0;
 
 
@@ -27,6 +29,7 @@ Program* ShaderManager::getShader(std::string name) {
 	}
 
 	std::cout << "ERROR: Shader " << name << " not found" << std::endl;
+	return nullptr;
 }
 
 void ShaderManager::updateShaders() {

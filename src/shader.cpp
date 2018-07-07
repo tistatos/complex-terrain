@@ -17,7 +17,8 @@ long filelength(FILE *file) {
 	return numbytes;             // This is the file length
 }
 
-Shader::Shader(char* path, GLenum shaderType) {
+//TODO: avoid reading file here since we can crash if the file is not available
+Shader::Shader(const char* path, GLenum shaderType) {
 	mShaderID = glCreateShader(shaderType);
 	mShaderPath = path;
 	const char* source =  readSource(path);
@@ -40,7 +41,7 @@ Shader::~Shader() {
 	glDeleteShader(mShaderID);
 }
 
-char* Shader::readSource(char* filename) {
+const char* Shader::readSource(const char* filename) {
 	FILE *file = fopen(filename, "r");
 	if(file == NULL) {
 		std::cout << "error finding file: " << filename << std::endl;

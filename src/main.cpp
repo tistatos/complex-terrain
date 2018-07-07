@@ -5,10 +5,10 @@
 * @brief [Description Goes Here]
 */
 
-#include <iostream>
+#include <GL/glew.h>
+#include <GL/gl.h>
 
 #include "engine.h"
-#include "gameTimer.h"
 
 int main(int argc, char* argv[])
 {

@@ -6,11 +6,18 @@
 */
 
 #include "entity.h"
-
-void Entity::translate(glm::vec3 trans) {
-	mModelMatrix = glm::translate(mModelMatrix, trans);
+Entity::Entity() : mScale(1.0, 1.0, 1.0) {
 }
 
-void Entity::rotate(glm::mat4 rot) {
-	mModelMatrix *= rot;
+const glm::mat4 Entity::getModelMatrix() const {
+	glm::mat4 m = glm::translate(glm::yawPitchRoll(mRotation.y, mRotation.x, mRotation.z)*glm::scale(glm::mat4(), mScale), mPosition);
+		return m;
+
+}
+void Entity::translate(glm::vec3 trans) {
+	mPosition += trans;
+}
+
+void Entity::rotate(glm::vec3 rot) {
+	mRotation += rot;
 }

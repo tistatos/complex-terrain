@@ -11,4 +11,3 @@ void main() {
 	instanceID = gl_InstanceID;
 	gl_Position = quad[gl_VertexID];
 }
-

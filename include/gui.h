@@ -8,7 +8,9 @@
 #ifndef __GUI_H__
 #define __GUI_H__
 
-#include "engine.h"
+#include <GL/glew.h>
+#include "glm/glm.hpp"
+
 #include "shader.h"
 
 #include <ft2build.h>
@@ -19,7 +21,7 @@ struct Character {
 	GLuint textureID;
 	glm::ivec2 size;
 	glm::ivec2 bearing;
-	GLuint advance;
+	GLint64 advance;
 };
 
 class GUI {

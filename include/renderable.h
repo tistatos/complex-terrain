@@ -8,10 +8,10 @@
 #ifndef __RENDERABLE_H__
 #define __RENDERABLE_H__
 
-class Renderable : public Entity
-{
+class Renderable {
 public:
-	virtual void render();
+	virtual void update(const double dt) = 0;
+	virtual void render(const double dt) const = 0;
 };
 
 #endif

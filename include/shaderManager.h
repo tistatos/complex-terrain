@@ -8,8 +8,10 @@
 #ifndef __SHADERMANAGER_H__
 #define __SHADERMANAGER_H__
 
-#include "shader.h"
 #include <vector>
+#include <string>
+class Program;
+
 class ShaderManager
 {
 public:

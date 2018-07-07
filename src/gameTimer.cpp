@@ -4,8 +4,9 @@
 * @date 15-12-2015
 * @brief game timer
 */
-
 #include "gameTimer.h"
+
+#include <GLFW/glfw3.h>
 
 GameTimer::GameTimer()
 {
@@ -43,4 +44,3 @@ const float GameTimer::getFPS()
 {
 	return mFPS;
 }
-

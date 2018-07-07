@@ -1,5 +1,8 @@
 #version 420 core
 
+layout(binding = 1, r32f) uniform image3D densityMap;
+uniform ivec3 chunkWorldPosition;
+
 in flat int instanceID;
 in vec4 gl_FragCoord;
 
@@ -97,11 +100,11 @@ float snoise(vec3 v)
 
 
 float calculateDensity(ivec3 blockPosition) {
-	vec3 worldPosition = vec3(worldPosition+ blockPosition);
+	vec3 worldPosition = vec3(chunkWorldPosition + blockPosition);
 	return -worldPosition.y;
 }
 
 void main() {
-	ivec3 pos = ivec3(gl_FragCoord.xy, instanceID);
-	imageStore(densityMap, pos, vec4(calculateDensity(pos), 0, 0, 0));
+	ivec3 mapPos = ivec3(gl_FragCoord.xy, instanceID);
+	imageStore(densityMap, mapPos, vec4(calculateDensity(mapPos), 0, 0, 0));
 }

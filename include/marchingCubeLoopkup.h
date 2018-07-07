@@ -6,7 +6,10 @@
 *         Taken from http://paulbourke.net/geometry/polygonise/
 */
 
-static const int triTable[256][16] =
+static const int TRI_TABLE_WIDTH = 16;
+static const int TRI_TABLE_HEIGHT = 256;
+
+static const int triTable[TRI_TABLE_HEIGHT][TRI_TABLE_WIDTH] =
 { { -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1 },
 { 0, 8, 3, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1 },
 { 0, 1, 9, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1 },
@@ -263,4 +266,3 @@ static const int triTable[256][16] =
 { 0, 9, 1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1 },
 { 0, 3, 8, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1 },
 { -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1 } };
-

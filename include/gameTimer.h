@@ -7,8 +7,6 @@
 #ifndef __GAMETIMER_H__
 #define __GAMETIMER_H__
 
-#include <GLFW/glfw3.h>
-
 class GameTimer
 {
 public:

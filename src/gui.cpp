@@ -5,7 +5,13 @@
 * @brief [Description Goes Here]
 */
 
+
+
+#include <GL/glew.h>
+#include "glm/gtc/matrix_transform.hpp"
+
 #include "gui.h"
+#include "shaderManager.h"
 
 GUI::GUI(): mFontSize(22.0f) { }
 
