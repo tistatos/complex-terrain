@@ -19,4 +19,3 @@ ExternalProject_Add(glm
   )
 
 set(GLM_INCLUDE_DIR ${glm_PREFIX}/src/glm PARENT_SCOPE)
-

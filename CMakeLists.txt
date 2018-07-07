@@ -83,8 +83,6 @@ include_directories(
 set(EXT_DEPS
     glm
     pthread
-    googletest
-    gtest
 		freetype
 )
 
@@ -101,34 +99,3 @@ add_subdirectory(${PROJECT_CXX_DIR})
 add_executable(${PROJECT_NAME} ${MAIN_SOURCE})
 add_dependencies(${PROJECT_NAME} ${EXT_DEPS})
 target_link_libraries(${PROJECT_NAME} ${ALL_LIBS})
-
-##
-# Testing
-##
-
-#enable_testing()
-
-#set(PROJECT_TEST_NAME ${PROJECT_NAME}_test)
-
-#include_directories(${GTEST_INCLUDE_DIRS})
-
-#add_subdirectory(${PROJECT_SOURCE_DIR}/test)
-
-#add_executable(${PROJECT_TEST_NAME} ${TEST_SRC_FILES})
-#add_dependencies(${PROJECT_TEST_NAME} ${EXT_DEPS})
-#target_link_libraries(${PROJECT_TEST_NAME} ${ALL_LIBS})
-
-#set(Suffix ".a")
-#set(Pthread "-pthread")
-#target_link_libraries(${PROJECT_TEST_NAME}
-       #debug ${GTEST_LIBS_DIR}/googlemock/gtest/DebugLibs/${CMAKE_FIND_LIBRARY_PREFIXES}gtest${Suffix}
-       #optimized ${GTEST_LIBS_DIR}/googlemock/gtest/ReleaseLibs/${CMAKE_FIND_LIBRARY_PREFIXES}gtest${Suffix}
-#)
-
-#target_link_libraries(${PROJECT_TEST_NAME}
-       #debug ${GTEST_LIBS_DIR}/googlemock/gtest/DebugLibs/${CMAKE_FIND_LIBRARY_PREFIXES}gtest_main${Suffix}
-       #optimized ${GTEST_LIBS_DIR}/googlemock/gtest/ReleaseLibs/${CMAKE_FIND_LIBRARY_PREFIXES}gtest_main${Suffix}
-       #${Pthread}
-#)
-
-#add_test(test ${PROJECT_TEST_NAME})
