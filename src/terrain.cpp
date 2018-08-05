@@ -11,59 +11,25 @@
 #include "shaderManager.h"
 #include "marchingCubeLoopkup.h"
 
+#include "utils.h"
+
+static const uint32_t DENSITY_TEXTURE_MARGINS = 2;
+static const uint32_t DENSITY_TEXTURE_SIZE = 33;
+static const uint32_t DENSITY_TEXTURE_BOUNDS = DENSITY_TEXTURE_SIZE + 2 * DENSITY_TEXTURE_MARGINS;
+
 void Terrain::initialize() {
 
-	//Shader to create density pass
-	Shader* instancedQuad = new Shader(
-			"../shaders/instancedQuad.vert", GL_VERTEX_SHADER);
-	Shader* densityShader = new Shader(
-			"../shaders/density.frag", GL_FRAGMENT_SHADER);
-	Program* densityProgram = new Program("densityProgram");
+	createShaders();
 
-	//Attach and link shader
-	densityProgram->attach(densityShader);
-	densityProgram->attach(instancedQuad);
-	densityProgram->linkProgram();
-
-	ShaderManager::getInstance()->addShader(densityProgram);
-
-	//shader for Generating of vertcies
-	Shader* genVertex = new Shader("../shaders/generateVertex.vert", GL_VERTEX_SHADER);
-	Shader* genGeometry = new Shader("../shaders/generateVertex.gs", GL_GEOMETRY_SHADER);
-	Program* vertexProgram = new Program("vertexProgram");
-
-	vertexProgram->attach(genVertex);
-	vertexProgram->attach(genGeometry);
-
-	//Set varying data - what we want to return from the vertex shader
-	const uint32_t varyingCount = 2;
-	const char* varyings[varyingCount] = {
-		"worldPosition",
-		"normal"
-	};
-	glTransformFeedbackVaryings(*vertexProgram, varyingCount, varyings, GL_INTERLEAVED_ATTRIBS);
-	vertexProgram->linkProgram();
-
-	ShaderManager::getInstance()->addShader(vertexProgram);
-
-	//final render shader
-	Shader* renderVert = new Shader( "../shaders/render.vert", GL_VERTEX_SHADER);
-	Shader* renderFrag = new Shader( "../shaders/render.frag", GL_FRAGMENT_SHADER);
-	Program* renderingProgram = new Program("rendering");
-
-	renderingProgram->attach(renderVert);
-	renderingProgram->attach(renderFrag);
-	renderingProgram->linkProgram();
-
-	ShaderManager::getInstance()->addShader(renderingProgram);
-
-	glm::vec3 geoPoints[CHUNK_SIZE+1][CHUNK_SIZE+1][CHUNK_SIZE+1];
-	for (unsigned int x = 0; x < CHUNK_SIZE+1; ++x)
+	//Generate points to to evalute the density function
+	glm::ivec3 geoPoints[CHUNK_SIZE+1][CHUNK_SIZE+1][CHUNK_SIZE+1];
+	for (unsigned int z = 0; z < CHUNK_SIZE+1; ++z)
 		for (unsigned int y = 0; y < CHUNK_SIZE+1; ++y)
-			for (unsigned int z = 0; z < CHUNK_SIZE+1; ++z)
-				geoPoints[x][y][z] = glm::vec3(x,y,z);
+			for (unsigned int x = 0; x < CHUNK_SIZE+1; ++x)
+				geoPoints[z][y][x] = glm::ivec3(x,y,z);
 
-	//Geo points used during vertex generation
+
+	//Geo points used during density generation
 	glGenVertexArrays(1, &mGeoVertexArrayObject);
 	glBindVertexArray(mGeoVertexArrayObject);
 	glGenBuffers(1, &mGeoBuffer);
@@ -82,16 +48,15 @@ void Terrain::initialize() {
 
 	glGenTransformFeedbacks(1, &mVertexFeedbackObject);
 	glBindTransformFeedback(GL_TRANSFORM_FEEDBACK, mVertexFeedbackObject);
-	glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 1, mVertexFeedbackBuffer);
+	glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, mVertexFeedbackBuffer);
 	glBindTransformFeedback(GL_TRANSFORM_FEEDBACK, 0);
 
-	glGenVertexArrays(1, &mVertexFeedbackArrayObject);
-	glBindVertexArray(mVertexFeedbackArrayObject);
-	glBindBuffer(GL_ARRAY_BUFFER, mVertexFeedbackBuffer);
-	glVertexAttribIPointer(0, 1, GL_UNSIGNED_INT, 0, 0);
-	glEnableVertexAttribArray(0);
-
-	glBindVertexArray(0);
+	//glGenVertexArrays(1, &mVertexFeedbackArrayObject);
+	//glBindVertexArray(mVertexFeedbackArrayObject);
+	//glBindBuffer(GL_ARRAY_BUFFER, mVertexFeedbackBuffer);
+	//glVertexAttribIPointer(0, 1, GL_UNSIGNED_INT, 0, 0);
+	//glEnableVertexAttribArray(0);
+	//glBindVertexArray(0);
 
 	generateTextures();
 
@@ -102,28 +67,58 @@ void Terrain::initialize() {
 }
 
 void Terrain::pregenerateChunks() {
-	Program* p = ShaderManager::getInstance()->getShader("densityProgram");
-	p->useProgram();
 
+	for(int x = 0; x < 4; x++) {
+		for(int y = 0; y < 4; y++) {
+			for(int z = 0; z < 4; z++) {
+				Chunk* c = &mChunkList[
+					x + 4 * (y + 4 * z)
+				];
+				c->position = glm::vec3(
+						(x-2)*32, (y-2)*32.0, (z-2)*32.0);
+			}
+		}
+	}
 	glDisable(GL_DEPTH_TEST);
-	glViewport(0, 0, CHUNK_WITH_MARGINS, CHUNK_WITH_MARGINS);
+	glViewport(0, 0, DENSITY_TEXTURE_BOUNDS, DENSITY_TEXTURE_BOUNDS);
+	//glActiveTexture(GL_TEXTURE1);
+	glBindVertexArray(mGeoVertexArrayObject);
 	for(unsigned int i = 0; i < CHUNK_COUNT; ++i) {
-		//generate density for the chunk
+		Program* p = ShaderManager::getInstance()->getShader("densityProgram");
+		p->useProgram();
+		//Get a chunk and set its position in world space
 		Chunk* c = &mChunkList[i];
-		c->position = glm::vec3(0.0, 0.0, i);
-		glUniform3i(glGetUniformLocation(*p, "chunkWorldPosition"), c->position.x, c->position.y, c->position.z);
-		glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, CHUNK_WITH_MARGINS);
 		mChunkPositions[i] = c->position;
+
+		//generate density texture for this chunk
+		glUniform3i(glGetUniformLocation(*p, "chunkWorldPosition"), c->position.x, c->position.y, c->position.z);
+		glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, DENSITY_TEXTURE_BOUNDS);
+
+		//glFlush();
+		//float DensityValues[DENSITY_TEXTURE_BOUNDS * DENSITY_TEXTURE_BOUNDS * DENSITY_TEXTURE_BOUNDS];
+		//glBindTexture(GL_TEXTURE_3D, mDensityMap);
+		//glGetTexImage(GL_TEXTURE_3D, 0, GL_RED, GL_FLOAT, DensityValues);
+		//for(uint32_t i = 0; i < DENSITY_TEXTURE_SIZE; i++) {
+			//char filename[64];
+			//sprintf(filename, "density%i.ppm", i);
+			//utils::SavePPMFile(filename,
+					//DENSITY_TEXTURE_BOUNDS, DENSITY_TEXTURE_BOUNDS,
+					//&DensityValues[i*DENSITY_TEXTURE_BOUNDS*DENSITY_TEXTURE_BOUNDS]);
+		//}
 
 		//from density, generate vertices
 		p = ShaderManager::getInstance()->getShader("vertexProgram");
 		p->useProgram();
+		glUniform3f(glGetUniformLocation(*p, "chunkWorldPosition"), c->position.x, c->position.y, c->position.z);
 		glEnable(GL_RASTERIZER_DISCARD);
+		c->fill();
 		c->startVertex();
+		//glDrawTransformFeedback(GL_POINTS, mVertexFeedbackObject);
 		glBindVertexArray(mGeoVertexArrayObject);
-		glDrawTransformFeedback(GL_POINTS, mVertexFeedbackObject);
+		//glBindTexture(GL_TEXTURE_3D, mDensityMap);
+		//glDrawArrays(GL_POINTS, 0, (CHUNK_SIZE + 1) * (CHUNK_SIZE + 1) * (CHUNK_SIZE +1));
+		glDrawArrays(GL_POINTS, 0, (CHUNK_SIZE + 1) * (CHUNK_SIZE + 1) * (CHUNK_SIZE +1));
 		c->endVertex();
-		glFlush();
 		glDisable(GL_RASTERIZER_DISCARD);
 	}
 }
@@ -132,40 +127,88 @@ void Terrain::pregenerateChunks() {
 void Terrain::generateTextures() {
 	//Density map
 	glGenTextures(1, &mDensityMap);
-	glActiveTexture(GL_TEXTURE0);
+	glActiveTexture(GL_TEXTURE1);
 	glBindTexture(GL_TEXTURE_3D, mDensityMap);
 	glTexStorage3D(GL_TEXTURE_3D, 1, GL_R32F,
-			CHUNK_WITH_MARGINS, CHUNK_WITH_MARGINS, CHUNK_WITH_MARGINS);
+			DENSITY_TEXTURE_BOUNDS, DENSITY_TEXTURE_BOUNDS, DENSITY_TEXTURE_BOUNDS);
 	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glBindImageTexture(1, mDensityMap, 0,  GL_TRUE, 0, GL_READ_WRITE, GL_R32F);
-	glBindTexture(GL_TEXTURE_3D, 0);
 
 	//marching cubes table
 	glGenTextures(1, &mTriTable);
-	glActiveTexture(GL_TEXTURE1);
+	glActiveTexture(GL_TEXTURE2);
 	glBindTexture(GL_TEXTURE_2D, mTriTable);
 	glTexStorage2D(GL_TEXTURE_2D, 1, GL_R32I, TRI_TABLE_WIDTH, TRI_TABLE_HEIGHT);
 	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, TRI_TABLE_WIDTH, TRI_TABLE_HEIGHT,
 			GL_RED_INTEGER, GL_INT, triTable);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glBindTexture(GL_TEXTURE_2D, 0);
+}
+
+void Terrain::createShaders() {
+	//Shader to create density pass
+	Shader* instancedQuad = new Shader(
+			"../shaders/instancedQuad.vert", GL_VERTEX_SHADER);
+	Shader* densityShader = new Shader(
+			"../shaders/density.frag", GL_FRAGMENT_SHADER);
+	Program* densityProgram = new Program("densityProgram");
+
+	densityProgram->attach(densityShader);
+	densityProgram->attach(instancedQuad);
+	densityProgram->linkProgram();
+
+	ShaderManager::getInstance()->addShader(densityProgram);
+
+	//shader for Generating of vertices
+	Shader* genVertex = new Shader("../shaders/generateVertex.vert", GL_VERTEX_SHADER);
+	Shader* genGeometry = new Shader("../shaders/generateVertex.gs", GL_GEOMETRY_SHADER);
+	Program* vertexProgram = new Program("vertexProgram");
+
+	vertexProgram->attach(genVertex);
+	vertexProgram->attach(genGeometry);
+
+	//Set varying data - what we want to return from the vertex shader
+	const uint32_t varyingCount = 2;
+	const char* varyings[varyingCount] = {
+		"worldPosition",
+		"normal"
+	};
+
+	glTransformFeedbackVaryings(*vertexProgram, varyingCount, varyings, GL_INTERLEAVED_ATTRIBS);
+	vertexProgram->linkProgram();
+
+	ShaderManager::getInstance()->addShader(vertexProgram);
+
+	//final render shader
+	Shader* renderVert = new Shader( "../shaders/render.vert", GL_VERTEX_SHADER);
+	Shader* renderFrag = new Shader( "../shaders/render.frag", GL_FRAGMENT_SHADER);
+	Program* renderingProgram = new Program("rendering");
+
+	renderingProgram->attach(renderVert);
+	renderingProgram->attach(renderFrag);
+	renderingProgram->linkProgram();
+
+	ShaderManager::getInstance()->addShader(renderingProgram);
 }
 
 void Terrain::render() {
 	for(unsigned int i = 0; i < CHUNK_COUNT; ++i) {
-		mChunkList[i].render();
+		Chunk* c = &mChunkList[i];
+		Program* render = ShaderManager::getInstance()->getShader("rendering");
+		render->useProgram();
+		c->render();
+		c->renderBoundingBox();
 	}
 }
 
 void Terrain::update() {
-	for(unsigned int i = 0; i < CHUNK_COUNT; ++i) {
-		mChunkList[i].startVertex();
-		//
-		//generate vertices
-		//
-		mChunkList[i].endVertex();
+	//for(unsigned int i = 0; i < CHUNK_COUNT; ++i) {
+		//mChunkList[i].startVertex();
+		////
+		////generate vertices
+		////
+		//mChunkList[i].endVertex();
 
-	}
+	//}
 }

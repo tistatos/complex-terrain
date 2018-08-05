@@ -10,8 +10,10 @@ layout(std140) uniform camera {
 };
 
 out vec3 fragNormal;
+out vec3 fragPosition;
 
 void main() {
-	fragNormal = (normal + 1.0) * 0.5;
+	fragNormal = normal;
 	gl_Position = vp*position;
+	fragPosition = position.xyz;
 }

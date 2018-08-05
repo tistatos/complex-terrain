@@ -19,20 +19,21 @@ typedef struct chunkVertex {
 
 class Chunk {
 public:
-	static const uint32_t CHUNK_SIZE = 32;
+	//static const uint32_t CHUNK_SIZE = 32;
 	static const uint32_t MAX_VERTICES = 33 * 33 * 33;
-	static const uint32_t MAX_INDICIES = 32 * 32 * 32 * 15;
+	//static const uint32_t MAX_INDICIES = 32 * 32 * 32 * 15;
 
 	Chunk();
 
 	void render();
-	void setEmpty();
+	void renderBoundingBox();
+	//void setEmpty();
 	void fill();
 
 	void startVertex();
 	void endVertex();
-	void startIndex();
-	void endIndex();
+	//void startIndex();
+	//void endIndex();
 
 	bool isEmpty() { return mEmpty; }
 
@@ -42,12 +43,18 @@ private:
 	void generateBuffers();
 	GLuint mVertexArray;
 	GLuint mVertexBuffer;
-	GLuint mVertexFeedback;
+	uint32_t mVertexCount;
 
-	unsigned int mIndexCount;
-	GLuint mIndexQuery;
-	GLuint mIndexBuffer;
-	GLuint mIndexFeedback;
+	GLuint mVertexFeedback;
+	GLuint mVertexCountQuery;
+
+	//unsigned int mIndexCount;
+	//GLuint mIndexQuery;
+	//GLuint mIndexBuffer;
+	//GLuint mIndexFeedback;
+	//
+	GLuint mBoundingBoxArray;
+	GLuint mBoundingBoxBuffer;
 
 	bool mEmpty;
 };

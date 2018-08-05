@@ -100,8 +100,16 @@ float snoise(vec3 v)
 
 
 float calculateDensity(ivec3 blockPosition) {
-	vec3 worldPosition = vec3(chunkWorldPosition + blockPosition);
-	return -worldPosition.y;
+	vec3 worldPosition = vec3(blockPosition+chunkWorldPosition-vec3(16.0));
+	//vec3 worldPosition = vec3(blockPosition+chunkWorldPosition);
+
+	//float density = distance(vec3(0.0), worldPosition) < 5.0 ? 1.0 : -1.0;
+	float density = -worldPosition.y;
+	density -= 6.9*snoise(worldPosition/30.0);
+	density -= 2*snoise(worldPosition/5.0);
+	density -= 1.0*snoise(worldPosition/2.0);
+
+	return density;
 }
 
 void main() {

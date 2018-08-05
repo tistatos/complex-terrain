@@ -50,6 +50,9 @@ private:
 	GLFWwindow* mWindow;
 	GLFWmonitor* mMonitor;
 
+	uint32_t mWidth;
+	uint32_t mHeight;
+
 	char mTitle[64];
 
 	GLuint vertexArrayID;

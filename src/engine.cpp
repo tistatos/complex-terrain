@@ -7,6 +7,7 @@
 #include <GL/glew.h>
 #include <glm/gtx/string_cast.hpp>
 #include <glm/gtx/rotate_vector.hpp>
+#include <iostream>
 
 #include "engine.h"
 #include "shaderManager.h"
@@ -16,21 +17,23 @@
 #include "camera.h"
 #include "shader.h"
 
-static const GLfloat vertexDataArray[] =
-{
-	-1.0f, -1.0f, 0.0f,
-	1.0f, -1.0f, 0.0f,
-	0.0f, 1.0f, 0.0f
+class OpenGLDebugger {
+public:
+static void GLAPIENTRY
+	MessageCallback( GLenum source,
+									 GLenum type,
+									 GLuint id,
+									 GLenum severity,
+									 GLsizei length,
+									 const GLchar* message,
+									 const void* userParam )
+	{
+		if(type == GL_DEBUG_TYPE_ERROR)
+			fprintf( stderr, "GL CALLBACK: %s source = 0x%x, type = 0x%x, severity = 0x%x, message = %s\n",
+										 ( type == GL_DEBUG_TYPE_ERROR ? "** GL ERROR **" : "" ),
+																 type, source, severity, message );
+	}
 };
-
-static const GLfloat colorDataArray[] =
-{
-	1.0f, 0.0f, 0.0f,
-	0.0f, 1.0f, 0.0f,
-	0.0f, 0.0f, 1.0f
-};
-//Index array
-static const GLuint indexArrayData[] = { 0,1,2 };
 
 CTEngine::CTEngine(const char* name)
 	: mMovementSpeed(1.0f)
@@ -51,7 +54,9 @@ bool CTEngine::initialize() {
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 
-	mWindow = glfwCreateWindow(vidmode->width/2, vidmode->height/2, mTitle, NULL, NULL);
+	mWidth = vidmode->width/1;
+	mHeight = vidmode->height/1;
+	mWindow = glfwCreateWindow(mWidth, mHeight, mTitle, NULL, NULL);
 
 	if (!mWindow) {
 		glfwTerminate();
@@ -65,7 +70,14 @@ bool CTEngine::initialize() {
 	//Initialize glew
 	glewExperimental = GL_TRUE;
 	glewInit();
+
+	// During init, enable debug output
+	glEnable              ( GL_DEBUG_OUTPUT );
+	glDebugMessageCallback( OpenGLDebugger::MessageCallback, 0 );
+
+	//get initial position of mouse
 	glfwGetCursorPos(mWindow, &mPreviousMouseX, &mPreviousMouseY);
+
 
 	//Setup camera
 	mCamera = new Camera(vidmode->width, vidmode->height, 45.0f);
@@ -77,7 +89,7 @@ bool CTEngine::initialize() {
 		return false;
 	}
 
-	//initalize Other stuff,
+	//Simple cube shader
 	Shader* cubeVertexShader = new Shader("../shaders/cube.vert", GL_VERTEX_SHADER);
 	Shader* cubeFragmentShader  = new Shader("../shaders/cube.frag", GL_FRAGMENT_SHADER);
 	Program* cubeProgram = new Program("simpleCube");
@@ -86,46 +98,23 @@ bool CTEngine::initialize() {
 	cubeProgram->linkProgram();
 	ShaderManager::getInstance()->addShader(cubeProgram);
 
-	Shader* colorV = new Shader("../shaders/color.vert", GL_VERTEX_SHADER);
-	Shader* colorF  = new Shader("../shaders/color.frag", GL_FRAGMENT_SHADER);
-	Program* color  = new Program("color");
-	color->attach(colorV);
-	color->attach(colorF);
-	color->linkProgram();
-	ShaderManager::getInstance()->addShader(color);
+	//bounding box shader
+	Shader* boundingBoxVert = new Shader( "../shaders/boundingbox.vert", GL_VERTEX_SHADER);
+	Shader* boundingBoxFrag = new Shader( "../shaders/boundingbox.frag", GL_FRAGMENT_SHADER);
+	Program* boundingBoxProgram  = new Program("bbox");
+	boundingBoxProgram->attach(boundingBoxVert);
+	boundingBoxProgram->attach(boundingBoxFrag);
+	boundingBoxProgram->linkProgram();
+	ShaderManager::getInstance()->addShader(boundingBoxProgram);
 
+	//Simple cube
 	mCube = new Cube(*cubeProgram);
+	mCube->setPosition(glm::vec3(0.0f, 0.0f, 0.0f));
 
-	glGenVertexArrays(1, &vertexArrayID);
-
-	//Generate buffers and store identifiers
-	glGenBuffers(1, &vertexBufferID);
-	glGenBuffers(1, &indexBufferID);
-	glGenBuffers(1, &colorBufferID);
-
-	//Bind vertexArray
-	glBindVertexArray(vertexArrayID);
-	//bind vertex buffer and put our data into the buffer
-	glBindBuffer(GL_ARRAY_BUFFER, vertexBufferID);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(vertexDataArray), vertexDataArray, GL_STATIC_DRAW);
-
-	//Tell shaders what data is in this attribute
-	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE,0,(void*)0);
-
-	//Bind index buffer and insert our indices
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexBufferID);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indexArrayData), indexArrayData, GL_STATIC_DRAW);
-
-	//Bind color buffer
-	glBindBuffer(GL_ARRAY_BUFFER, colorBufferID);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(colorDataArray), colorDataArray, GL_STATIC_DRAW);
-
-	//Tell shaders what data is in this attribute
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
-	glEnableVertexAttribArray(1);
-
+	//initialize Terrain
+	//will generate the initial chunks
 	mTerrain.initialize();
+
 	mRunning = true;
 	return true;
 }
@@ -153,8 +142,11 @@ void CTEngine::update(double dt) {
 		glfwSetWindowShouldClose(mWindow, GL_TRUE);
 	}
 
-	if(glfwGetKey(mWindow, GLFW_KEY_F5))
+	if(glfwGetKey(mWindow, GLFW_KEY_F5)) {
+		std::cout << "updating shaders...";
 		ShaderManager::getInstance()->updateShaders();
+		std::cout << "Done!" << std::endl;
+	}
 
 	double mouseX, mouseY;
 	glfwGetCursorPos(mWindow, &mouseX, &mouseY);
@@ -165,9 +157,9 @@ void CTEngine::update(double dt) {
 	mPreviousMouseX = mouseX;
 	mPreviousMouseY = mouseY;
 
-	float cameraSpeed = 0.01f;
+	float cameraSpeed = 0.1f;
 	if(glfwGetKey(mWindow, GLFW_KEY_LEFT_SHIFT))
-		cameraSpeed += 0.1f;
+		cameraSpeed += 0.6f;
 	if(glfwGetKey(mWindow,GLFW_KEY_W))
 		mCamera->translate(cameraSpeed * mCamera->mFacing);
 	if(glfwGetKey(mWindow,GLFW_KEY_S))
@@ -186,15 +178,18 @@ void CTEngine::update(double dt) {
 	mCamera->update(dt);
 	mCube->update(dt);
 
-	mTerrain.update();
+	//mTerrain.update();
 }
 
 void CTEngine::render(double dt) {
+	glViewport(0, 0, mWidth, mHeight);
 	glClearColor(0.3f, 0.3f, 0.3f, 0.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_CULL_FACE);
 
 	mCube->render(dt);
+	mTerrain.render();
 
 	glm::vec3 camPos = mCamera->getPosition();
 	glm::vec3 camRot = mCamera->mFacing;
@@ -207,7 +202,6 @@ void CTEngine::render(double dt) {
 	mGUI->renderText(camRotText, 10.0f, vidmode->height-60.0f, 1.0f, glm::vec3(1.0f, 1.0f, 1.0f));
 
 
-	mTerrain.render();
 	glfwSwapBuffers(mWindow);
 }
 

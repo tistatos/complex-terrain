@@ -19,12 +19,15 @@ public:
 	void render();
 	void update();
 	static const uint32_t CHUNK_SIZE = 32;
-	static const uint32_t CHUNK_WITH_MARGINS = CHUNK_SIZE + 2 * 2;
-	static const unsigned int CHUNK_COUNT = 17 * 17 * 17;
+	//static const uint32_t CHUNK_WITH_MARGINS = CHUNK_SIZE + 2 * 2;
+	//static const unsigned int CHUNK_COUNT = 10 * 10 * 10;
+	static const unsigned int CHUNK_COUNT = 4 * 4 * 4;
 
 private:
 	void generateTextures();
 	void pregenerateChunks();
+
+	void createShaders();
 
 	//textures
 	GLuint mDensityMap;
@@ -33,12 +36,11 @@ private:
 	//transform feedback
 	GLuint mVertexFeedbackBuffer;
 	GLuint mVertexFeedbackObject;
-	GLuint mVertexFeedbackArrayObject;
+	//GLuint mVertexFeedbackArrayObject;
 
 	//Vertex generation points
 	GLuint mGeoVertexArrayObject;
 	GLuint mGeoBuffer;
-
 
 	//chunk list
 	Chunk* mChunkList;
