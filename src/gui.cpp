@@ -37,8 +37,8 @@ bool GUI::initialize() {
 	ShaderManager::getInstance()->addShader(guiProgram);
 
 	glGenVertexArrays(1, &mVAO);
-	glGenBuffers(1, &mVBO);
 	glBindVertexArray(mVAO);
+	glGenBuffers(1, &mVBO);
 	glBindBuffer(GL_ARRAY_BUFFER, mVBO);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * 6 * 4, NULL, GL_DYNAMIC_DRAW);
 	glEnableVertexAttribArray(0);
@@ -92,13 +92,13 @@ void GUI::renderText(std::string text, GLfloat x, GLfloat y, GLfloat scale, glm:
 
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	glActiveTexture(GL_TEXTURE0);
 
 	glm::mat4 projection = glm::ortho(0.0f, 1920.0f, 0.0f, 1080.0f);
 
 	guiShader->useProgram();
 	glUniform3f(glGetUniformLocation(guiShader->getProgram(), "textColor"), color.x, color.y, color.z);
 	glUniformMatrix4fv(glGetUniformLocation(guiShader->getProgram(), "projection"), 1, GL_FALSE, &projection[0][0]);
-	glActiveTexture(GL_TEXTURE0);
 	glBindVertexArray(mVAO);
 
 	std::string::const_iterator c;
