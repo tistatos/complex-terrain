@@ -5,20 +5,26 @@
 * @brief [Description Goes Here]
 */
 
-#include "terrain.h"
+#include "camera.h"
 #include "chunk.h"
+#include "marchingCubeLoopkup.h"
 #include "shader.h"
 #include "shaderManager.h"
-#include "marchingCubeLoopkup.h"
-
+#include "terrain.h"
 #include "utils.h"
 
+#include <glm/gtx/string_cast.hpp>
 static const uint32_t DENSITY_TEXTURE_MARGINS = 2;
 static const uint32_t DENSITY_TEXTURE_SIZE = 33;
 static const uint32_t DENSITY_TEXTURE_BOUNDS = DENSITY_TEXTURE_SIZE + 2 * DENSITY_TEXTURE_MARGINS;
 
-void Terrain::initialize() {
+void Terrain::initialize(Camera* camera) {
+	//Set camera and get its intial chunk index position
+	mCamera = camera;
+	//Determine index of chunk camera is at
+	mCameraChunk = getCameraChunk();
 
+	//Create shaders used for generation and rendering
 	createShaders();
 
 	//Generate points to to evalute the density function
@@ -27,7 +33,6 @@ void Terrain::initialize() {
 		for (unsigned int y = 0; y < CHUNK_SIZE+1; ++y)
 			for (unsigned int x = 0; x < CHUNK_SIZE+1; ++x)
 				geoPoints[z][y][x] = glm::ivec3(x,y,z);
-
 
 	//Geo points used during density generation
 	glGenVertexArrays(1, &mGeoVertexArrayObject);
@@ -61,66 +66,122 @@ void Terrain::initialize() {
 	generateTextures();
 
 	mChunkList = new Chunk[CHUNK_COUNT];
-	mChunkPositions = new glm::vec3[CHUNK_COUNT];
+	/*mChunkPositions = new glm::vec3[CHUNK_COUNT];*/
 
 	pregenerateChunks();
 }
 
-void Terrain::pregenerateChunks() {
+glm::ivec3 Terrain::getCameraChunk() const {
+	return getChunkIndex(mCamera->getPosition());
+	//FIXME: this is the value used for the camera indexing but is wrong for other chunks
+	//glm::vec3((CHUNK_SIZE / 2), -(int(CHUNK_SIZE) / 2), (CHUNK_SIZE / 2)))
+}
 
-	for(int x = 0; x < 4; x++) {
-		for(int y = 0; y < 4; y++) {
-			for(int z = 0; z < 4; z++) {
-				Chunk* c = &mChunkList[
-					x + 4 * (y + 4 * z)
-				];
-				c->position = glm::vec3(
-						(x-2)*32, (y-2)*32.0, (z-2)*32.0);
+glm::ivec3 Terrain::getChunkIndex(const glm::vec3& position) const {
+	glm::ivec3 chunkIndex =
+		glm::ivec3( position) / int(CHUNK_SIZE);
+	return chunkIndex;
+}
+
+uint32_t Terrain::getChunkArrayIndex(const glm::vec3& position) const {
+	glm::ivec3 chunkIndex = getChunkIndex(position);
+	glm::ivec3 modIdx = glm::ivec3(
+					(chunkIndex.x % (int)VERTICAL_CHUNK_COUNT + VERTICAL_CHUNK_COUNT) % VERTICAL_CHUNK_COUNT,
+					(chunkIndex.y % (int)HORIZONTAL_CHUNK_COUNT + HORIZONTAL_CHUNK_COUNT) % HORIZONTAL_CHUNK_COUNT,
+					(chunkIndex.z % (int)VERTICAL_CHUNK_COUNT + VERTICAL_CHUNK_COUNT) % VERTICAL_CHUNK_COUNT );
+	int idx = modIdx.x * VERTICAL_CHUNK_COUNT + modIdx.y * VERTICAL_CHUNK_COUNT * VERTICAL_CHUNK_COUNT + modIdx.z;
+
+	return idx;
+}
+
+
+
+void Terrain::updateChunkPositions() {
+	//TODO: use the camera chunk position together with the
+	//vertical horizontal count to calculate an index for the chunks
+	glm::ivec3 cameraPosition = getCameraChunk() * int(CHUNK_SIZE);
+	glm::ivec3 cameraChunk = getCameraChunk();
+	std::cout << "test: " << -1 % 3 << " " << 1 % 3 << " "<<  -1/3 << std::endl;
+
+	for(int x = 0; x < VERTICAL_CHUNK_COUNT; x++) {
+		for(int y = 0; y < HORIZONTAL_CHUNK_COUNT; y++) {
+			for(int z = 0; z < VERTICAL_CHUNK_COUNT; z++) {
+				const glm::ivec3 position = glm::ivec3(
+						(x - int(VERTICAL_CHUNK_COUNT - 1) / 2) * 32.0,
+						(y - int(HORIZONTAL_CHUNK_COUNT - 1) / 2) * 32.0,
+						(z - int(VERTICAL_CHUNK_COUNT - 1) / 2) * 32.0) + cameraPosition;
+				const uint32_t flatidx = getChunkArrayIndex(position);
+				const glm::ivec3 chunkIndex = getChunkIndex(position);
+
+				const uint32_t idx = flatidx;
+
+				//FIXME: this position test doesnt work. since default value of the chunk is 0,0,0 - the
+				//origin chunk isn't loaded
+				Chunk* c = &mChunkList[idx];
+				if(c->position != position)  {
+
+					std::cout << "Position: " << glm::to_string(position) <<
+					" Chunk index: " << glm::to_string(chunkIndex) <<
+					" => " << flatidx << std::endl;
+					c->position = position;
+					mChunkLoadQueue.push(c);
+				}
 			}
 		}
 	}
+}
+
+void Terrain::pregenerateChunks() {
+	updateChunkPositions();
+	generateChunks(false);
+}
+
+void Terrain::generateChunks(bool limit) {
+	const static uint32_t CHUNKS_PER_FRAME = 5;
+
 	glDisable(GL_DEPTH_TEST);
 	glViewport(0, 0, DENSITY_TEXTURE_BOUNDS, DENSITY_TEXTURE_BOUNDS);
-	//glActiveTexture(GL_TEXTURE1);
 	glBindVertexArray(mGeoVertexArrayObject);
-	for(unsigned int i = 0; i < CHUNK_COUNT; ++i) {
-		Program* p = ShaderManager::getInstance()->getShader("densityProgram");
-		p->useProgram();
-		//Get a chunk and set its position in world space
-		Chunk* c = &mChunkList[i];
-		mChunkPositions[i] = c->position;
 
-		//generate density texture for this chunk
-		glUniform3i(glGetUniformLocation(*p, "chunkWorldPosition"), c->position.x, c->position.y, c->position.z);
-		glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, DENSITY_TEXTURE_BOUNDS);
-
-		//glFlush();
-		//float DensityValues[DENSITY_TEXTURE_BOUNDS * DENSITY_TEXTURE_BOUNDS * DENSITY_TEXTURE_BOUNDS];
-		//glBindTexture(GL_TEXTURE_3D, mDensityMap);
-		//glGetTexImage(GL_TEXTURE_3D, 0, GL_RED, GL_FLOAT, DensityValues);
-		//for(uint32_t i = 0; i < DENSITY_TEXTURE_SIZE; i++) {
-			//char filename[64];
-			//sprintf(filename, "density%i.ppm", i);
-			//utils::SavePPMFile(filename,
-					//DENSITY_TEXTURE_BOUNDS, DENSITY_TEXTURE_BOUNDS,
-					//&DensityValues[i*DENSITY_TEXTURE_BOUNDS*DENSITY_TEXTURE_BOUNDS]);
-		//}
-
-		//from density, generate vertices
-		p = ShaderManager::getInstance()->getShader("vertexProgram");
-		p->useProgram();
-		glUniform3f(glGetUniformLocation(*p, "chunkWorldPosition"), c->position.x, c->position.y, c->position.z);
-		glEnable(GL_RASTERIZER_DISCARD);
-		c->fill();
-		c->startVertex();
-		//glDrawTransformFeedback(GL_POINTS, mVertexFeedbackObject);
-		glBindVertexArray(mGeoVertexArrayObject);
-		//glBindTexture(GL_TEXTURE_3D, mDensityMap);
-		//glDrawArrays(GL_POINTS, 0, (CHUNK_SIZE + 1) * (CHUNK_SIZE + 1) * (CHUNK_SIZE +1));
-		glDrawArrays(GL_POINTS, 0, (CHUNK_SIZE + 1) * (CHUNK_SIZE + 1) * (CHUNK_SIZE +1));
-		c->endVertex();
-		glDisable(GL_RASTERIZER_DISCARD);
+	uint32_t chunksLoadedThisFrame = 0;
+	while(
+			(limit && chunksLoadedThisFrame <= CHUNKS_PER_FRAME && !mChunkLoadQueue.empty()) ||
+			(!limit && !mChunkLoadQueue.empty())) {
+		Chunk* c = mChunkLoadQueue.front();
+		buildDensity(c);
+		generateVertices(c);
+		if(!c->isEmpty())
+			chunksLoadedThisFrame++;
+		mChunkLoadQueue.pop();
 	}
+}
+
+void Terrain::buildDensity(Chunk* c) {
+	//get density shader
+	Program* p = ShaderManager::getInstance()->getShader("densityProgram");
+	p->useProgram();
+	//generate density texture for this chunk
+	glUniform3i(glGetUniformLocation(*p, "chunkWorldPosition"), c->position.x, c->position.y, c->position.z);
+	glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, DENSITY_TEXTURE_BOUNDS);
+}
+
+void Terrain::generateVertices(Chunk* c) {
+
+	//Get vertex generator shader
+	Program* p = ShaderManager::getInstance()->getShader("vertexProgram");
+	p->useProgram();
+	//set value of chunk position
+	glUniform3f(glGetUniformLocation(*p, "chunkWorldPosition"), c->position.x, c->position.y, c->position.z);
+
+	//skip rasterization
+	glEnable(GL_RASTERIZER_DISCARD);
+	//FIXME: if we call fill here we create new buffers - running out of GPU memory
+	c->fill();
+	c->startVertex();
+	glBindVertexArray(mGeoVertexArrayObject);
+	glDrawArrays(GL_POINTS, 0, (CHUNK_SIZE + 1) * (CHUNK_SIZE + 1) * (CHUNK_SIZE +1));
+	c->endVertex();
+	glDisable(GL_RASTERIZER_DISCARD);
 }
 
 
@@ -192,6 +253,22 @@ void Terrain::createShaders() {
 	ShaderManager::getInstance()->addShader(renderingProgram);
 }
 
+// determine if chunk is out side of camera bounds
+void Terrain::markOutOfBoundChunks() {
+	for (int i = 0; i < CHUNK_COUNT; ++i) {
+		Chunk* c = &mChunkList[i];
+		const glm::vec3& chunkPosition = c->position;
+		const glm::vec3& cameraPosition =mCamera->getPosition();
+		if(
+			abs(chunkPosition.x - cameraPosition.x) > (VERTICAL_CHUNK_COUNT * CHUNK_SIZE) ||
+			abs(chunkPosition.y - cameraPosition.y) > (HORIZONTAL_CHUNK_COUNT * CHUNK_SIZE) ||
+			abs(chunkPosition.z - cameraPosition.z) > (VERTICAL_CHUNK_COUNT * CHUNK_SIZE) ) {
+			mChunkLoadQueue.push(c);
+		}
+	}
+}
+
+//TODO: add culling to improve fps - intial culling should be on chunks
 void Terrain::render() {
 	for(unsigned int i = 0; i < CHUNK_COUNT; ++i) {
 		Chunk* c = &mChunkList[i];
@@ -203,12 +280,18 @@ void Terrain::render() {
 }
 
 void Terrain::update() {
-	//for(unsigned int i = 0; i < CHUNK_COUNT; ++i) {
-		//mChunkList[i].startVertex();
-		////
-		////generate vertices
-		////
-		//mChunkList[i].endVertex();
+	//determine if camera has moved
+	glm::ivec3 currentCameraChunk = getCameraChunk();
 
-	//}
+	//Camera is in new chunk - update chunk positions
+	if(currentCameraChunk != mCameraChunk) {
+		std::cout << "transition from chunk: " << std::endl;
+		std::cout << glm::to_string(mCameraChunk) << std::endl;
+		std::cout << "to:" << std::endl;
+		std::cout << glm::to_string(currentCameraChunk) << std::endl;
+		markOutOfBoundChunks();
+		updateChunkPositions();
+	}
+	generateChunks(true);
+	mCameraChunk = currentCameraChunk;
 }
