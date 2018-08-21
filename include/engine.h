@@ -15,9 +15,30 @@
 #include "terrain.h"
 #include "gameTimer.h"
 
+#define GL_GPU_MEM_INFO_TOTAL_AVAILABLE_MEM_NVX 0x9048
+#define GL_GPU_MEM_INFO_CURRENT_AVAILABLE_MEM_NVX 0x9049
+
 class GUI;
 class Cube;
 class Camera;
+
+struct FPSCounter {
+	double timePassed;
+	double latestCount;
+	int frameCount;
+
+	FPSCounter() : timePassed(0), frameCount(0), latestCount(0) { }
+
+	void calculateFPS(double dt) {
+		timePassed += dt;
+		frameCount++;
+		if(timePassed > 1000.0) {
+			latestCount = (double)frameCount / (timePassed / 1000.0);
+			timePassed = 0.0;
+			frameCount = 0;
+		}
+	}
+};
 
 class CTEngine {
 public:
@@ -37,8 +58,10 @@ private:
 	GameTimer mTimer;
 	GUI* mGUI;
 	Cube* mCube;
+	FPSCounter mFPSCounter;
 
 	bool mRunning;
+	bool mCaptureCursor;
 
 	float mMovementSpeed;
 	float mLookSpeed;

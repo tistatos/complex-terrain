@@ -37,7 +37,7 @@ public:
 
 	bool isEmpty() { return mEmpty; }
 
-	glm::vec3 position;
+	glm::ivec3 position;
 
 private:
 	void generateBuffers();

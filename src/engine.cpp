@@ -38,6 +38,7 @@ static void GLAPIENTRY
 CTEngine::CTEngine(const char* name)
 	: mMovementSpeed(1.0f)
 	, mLookSpeed(10.0f)
+	, mCaptureCursor(true)
 	{
 	mRunning = false;
 	sprintf(mTitle, "%s", name);
@@ -113,7 +114,7 @@ bool CTEngine::initialize() {
 
 	//initialize Terrain
 	//will generate the initial chunks
-	mTerrain.initialize();
+	mTerrain.initialize(mCamera);
 
 	mRunning = true;
 	return true;
@@ -134,7 +135,8 @@ void CTEngine::run() {
 void CTEngine::update(double dt) {
 	glfwPollEvents();
 	char title[64];
-	sprintf(title,"%s, %.4f ms", mTitle, dt);
+	mFPSCounter.calculateFPS(dt);
+	sprintf(title,"%s, %.2f FPS %.4f ms", mTitle, mFPSCounter.latestCount, dt);
 	glfwSetWindowTitle(mWindow, title);
 
 	if(glfwGetKey(mWindow, GLFW_KEY_ESCAPE)) {
@@ -148,6 +150,15 @@ void CTEngine::update(double dt) {
 		std::cout << "Done!" << std::endl;
 	}
 
+	if(glfwGetMouseButton(mWindow, GLFW_MOUSE_BUTTON_RIGHT)) {
+		if(mCaptureCursor)
+			glfwSetInputMode(mWindow, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+		else
+			glfwSetInputMode(mWindow, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+
+		mCaptureCursor = !mCaptureCursor;
+	}
+
 	double mouseX, mouseY;
 	glfwGetCursorPos(mWindow, &mouseX, &mouseY);
 
@@ -157,9 +168,9 @@ void CTEngine::update(double dt) {
 	mPreviousMouseX = mouseX;
 	mPreviousMouseY = mouseY;
 
-	float cameraSpeed = 0.1f;
+	float cameraSpeed = 1.0f;
 	if(glfwGetKey(mWindow, GLFW_KEY_LEFT_SHIFT))
-		cameraSpeed += 0.6f;
+		cameraSpeed *= 3.0f;
 	if(glfwGetKey(mWindow,GLFW_KEY_W))
 		mCamera->translate(cameraSpeed * mCamera->mFacing);
 	if(glfwGetKey(mWindow,GLFW_KEY_S))
@@ -169,16 +180,18 @@ void CTEngine::update(double dt) {
 	if(glfwGetKey(mWindow,GLFW_KEY_D))
 		mCamera->translate(glm::normalize(glm::cross(mCamera->mFacing, glm::vec3(0.f,1.0f,0.0f))) * cameraSpeed);
 
-	float rotatespeed = 0.005f;
-	mCamera->mFacing = glm::rotateY(mCamera->mFacing, -(float)mouseDeltaX * rotatespeed);
-	mCamera->mFacing.y -= rotatespeed * mouseDeltaY;
-	glm::normalize(mCamera->mFacing);
+	if(mCaptureCursor) {
+		float rotatespeed = 0.005f;
+		mCamera->mFacing = glm::rotateY(mCamera->mFacing, -(float)mouseDeltaX * rotatespeed);
+		mCamera->mFacing.y -= rotatespeed * mouseDeltaY;
+		mCamera->mFacing = glm::normalize(mCamera->mFacing);
+	}
 
 
 	mCamera->update(dt);
 	mCube->update(dt);
 
-	//mTerrain.update();
+	mTerrain.update();
 }
 
 void CTEngine::render(double dt) {
@@ -201,6 +214,16 @@ void CTEngine::render(double dt) {
 	mGUI->renderText(camPosText, 10.0f, vidmode->height-40.0f, 1.0f, glm::vec3(1.0f, 1.0f, 1.0f));
 	mGUI->renderText(camRotText, 10.0f, vidmode->height-60.0f, 1.0f, glm::vec3(1.0f, 1.0f, 1.0f));
 
+	GLint nTotalMemoryInKB = 0;
+	glGetIntegerv( GL_GPU_MEM_INFO_TOTAL_AVAILABLE_MEM_NVX,
+                       &nTotalMemoryInKB );
+
+	GLint nCurAvailMemoryInKB = 0;
+	glGetIntegerv( GL_GPU_MEM_INFO_CURRENT_AVAILABLE_MEM_NVX,
+                       &nCurAvailMemoryInKB );
+	char memory[64];
+	sprintf(memory,"GPU mem: %d MB / %d MB", nCurAvailMemoryInKB / 1000, nTotalMemoryInKB / 1000);
+	mGUI->renderText(memory, 10.0f, vidmode->height-80.0f, 1.0f, glm::vec3(1.0f, 1.0f, 1.0f));
 
 	glfwSwapBuffers(mWindow);
 }
