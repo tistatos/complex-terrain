@@ -66,6 +66,12 @@ void Terrain::initialize(Camera* camera) {
 	generateTextures();
 
 	mChunkList = new Chunk[CHUNK_COUNT];
+
+	//Initialize position to MAX to indicate that it has no position as of yet
+	const uint32_t startPos = UINT32_MAX;
+	for (int i = 0; i < CHUNK_COUNT; ++i) {
+		mChunkList->position = glm::ivec3(startPos, startPos, startPos);
+	}
 	/*mChunkPositions = new glm::vec3[CHUNK_COUNT];*/
 
 	pregenerateChunks();
@@ -97,12 +103,11 @@ uint32_t Terrain::getChunkArrayIndex(const glm::vec3& position) const {
 
 
 void Terrain::updateChunkPositions() {
-	//TODO: use the camera chunk position together with the
-	//vertical horizontal count to calculate an index for the chunks
 	glm::ivec3 cameraPosition = getCameraChunk() * int(CHUNK_SIZE);
 	glm::ivec3 cameraChunk = getCameraChunk();
-	std::cout << "test: " << -1 % 3 << " " << 1 % 3 << " "<<  -1/3 << std::endl;
 
+	//TODO: start from the camera chunk and work outwards. Currently loading occurs from one way so
+	//when switching between planes the loading is quite terrible
 	for(int x = 0; x < VERTICAL_CHUNK_COUNT; x++) {
 		for(int y = 0; y < HORIZONTAL_CHUNK_COUNT; y++) {
 			for(int z = 0; z < VERTICAL_CHUNK_COUNT; z++) {
@@ -115,14 +120,8 @@ void Terrain::updateChunkPositions() {
 
 				const uint32_t idx = flatidx;
 
-				//FIXME: this position test doesnt work. since default value of the chunk is 0,0,0 - the
-				//origin chunk isn't loaded
 				Chunk* c = &mChunkList[idx];
 				if(c->position != position)  {
-
-					std::cout << "Position: " << glm::to_string(position) <<
-					" Chunk index: " << glm::to_string(chunkIndex) <<
-					" => " << flatidx << std::endl;
 					c->position = position;
 					mChunkLoadQueue.push(c);
 				}
@@ -150,10 +149,11 @@ void Terrain::generateChunks(bool limit) {
 		Chunk* c = mChunkLoadQueue.front();
 		buildDensity(c);
 		generateVertices(c);
-		if(!c->isEmpty())
-			chunksLoadedThisFrame++;
+		chunksLoadedThisFrame++;
 		mChunkLoadQueue.pop();
 	}
+	//if(chunksLoadedThisFrame >= CHUNKS_PER_FRAME)
+		//std::cout << "Max chunk per frame met" << std::endl;
 }
 
 void Terrain::buildDensity(Chunk* c) {
@@ -285,10 +285,7 @@ void Terrain::update() {
 
 	//Camera is in new chunk - update chunk positions
 	if(currentCameraChunk != mCameraChunk) {
-		std::cout << "transition from chunk: " << std::endl;
-		std::cout << glm::to_string(mCameraChunk) << std::endl;
-		std::cout << "to:" << std::endl;
-		std::cout << glm::to_string(currentCameraChunk) << std::endl;
+		std::cout << "transition from chunk: " << glm::to_string(mCameraChunk) << " to:" << glm::to_string(currentCameraChunk) << std::endl;
 		markOutOfBoundChunks();
 		updateChunkPositions();
 	}
