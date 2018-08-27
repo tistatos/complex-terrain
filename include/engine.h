@@ -63,6 +63,8 @@ private:
 	bool mRunning;
 	bool mCaptureCursor;
 
+	bool mRefreshShaderDebounce;
+
 	float mMovementSpeed;
 	float mLookSpeed;
 

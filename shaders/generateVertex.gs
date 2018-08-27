@@ -82,6 +82,58 @@ vec3 getGradient(vec3 uvw) {
 	return gradient;
 }
 
+const vec3 rayDirections[32] = {
+vec3(0.286582,	 0.257763, -0.922729),
+vec3(-0.171812, -0.888079 	 , 0.426375 ),
+vec3(0.440764, -0.502089 	 , -0.744066),
+vec3(-0.841007, -0.428818 	 , -0.329882),
+vec3(-0.380213, -0.588038 	 , -0.713898),
+vec3(-0.055393, -0.207160 	 , -0.976738),
+vec3(-0.901510, -0.077811 	 , 0.425706 ),
+vec3(-0.974593, 0.123830 	 , -0.186643),
+vec3(0.208042, -0.524280 	 , 0.825741 ),
+vec3(0.258429, -0.898570 	 , -0.354663),
+vec3(-0.262118, 0.574475 	 , -0.775418),
+vec3(0.735212, 0.551820 	 , 0.393646 ),
+vec3(0.828700, -0.523923 	 , -0.196877),
+vec3(0.788742, 0.005727 	 , -0.614698),
+vec3(-0.696885, 0.649338 	 , -0.304486),
+vec3(-0.625313, 0.082413 	 , -0.776010),
+vec3(0.358696, 0.928723 	 , 0.093864 ),
+vec3(0.188264, 0.628978 	 , 0.754283 ),
+vec3(-0.495193, 0.294596 	 , 0.817311 ),
+vec3(0.818889, 0.508670 	 , -0.265851),
+vec3(0.027189, 0.057757 	 , 0.997960 ),
+vec3(-0.188421, 0.961802 	 , -0.198582),
+vec3(0.995439, 0.019982 	 , 0.093282 ),
+vec3(-0.315254, -0.925345 	 , -0.210596),
+vec3(0.411992, -0.877706 	 , 0.244733 ),
+vec3(0.625857, 0.080059 	 , 0.775818 ),
+vec3(-0.243839, 0.866185 	 , 0.436194 ),
+vec3(-0.725464, -0.643645 	 , 0.243768 ),
+vec3(0.766785, -0.430702 	 , 0.475959 ),
+vec3(-0.446376, -0.391664 	 , 0.804580 ),
+vec3(-0.761557, 0.562508 	 , 0.321895 ),
+vec3(0.344460, 0.753223 	 , -0.560359)
+};
+
+float calculateAmbient(vec3 pos) {
+	float visibility = 0.0;
+	float densityTextureSize = 32.0 + 2.0 * 2.0;
+	float rstep = 1.0/densityTextureSize;
+	for(int i = 0; i < 32; i++) {
+		float thisRay = 1.0;
+		vec3 dir = rayDirections[i];
+		for(int j = 1; j < 8; j++) {
+			/*float d = texture(density, pos + dir * j*0.00).r;*/
+			float d = texture(density, pos+dir*rstep*0.01).r;
+			thisRay *= clamp(d*9999, 0.0, 1.0);
+		}
+		visibility += thisRay;
+	}
+	return (1 - visibility / 32.0);
+}
+
 void main() {
 	ivec3 position = voxelPosition[0];
 
@@ -116,8 +168,10 @@ void main() {
 		float d = 1.0 / (33 + 2 * 2);
 		vec3 UVW = (vertexPosition.xyz + 2) * d;
 		vec3 gradient = getGradient(UVW);
+		float ambient = calculateAmbient(UVW);
 		normal = -normalize(gradient);
 		worldPosition = vertexPosition + chunkPosition;
+		worldPosition.w = ambient;
 		EmitVertex();
 
 
@@ -133,7 +187,12 @@ void main() {
 				//(firstVertexDensityValue - secondVertexDensityValue), 0.0, 1.0);
 		worldPosition = vec4(
 				EdgeVert1 * (1.0-interpolation) + EdgeVert2 * interpolation, 1.0);
+		UVW = (worldPosition.xyz + 2) * d;
+		gradient = getGradient(UVW);
+		normal = -normalize(gradient);
 		worldPosition += chunkPosition;
+		ambient = calculateAmbient(UVW);
+		worldPosition.w = ambient;
 		EmitVertex();
 
 		edge  = texelFetch(triTable, ivec2(3 * i + 2, caseID), 0).r;
@@ -147,7 +206,13 @@ void main() {
 				//(firstVertexDensityValue - secondVertexDensityValue), 0.0, 1.0);
 		worldPosition = vec4(
 				EdgeVert1 * (1.0-interpolation) + EdgeVert2 * interpolation, 1.0);
+
+		UVW = (worldPosition.xyz + 2) * d;
+		gradient = getGradient(UVW);
+		normal = -normalize(gradient);
 		worldPosition += chunkPosition;
+		ambient = calculateAmbient(UVW);
+		worldPosition.w = ambient;
 		EmitVertex();
 	}
 }

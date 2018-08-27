@@ -68,24 +68,26 @@ void Terrain::initialize(Camera* camera) {
 	mChunkList = new Chunk[CHUNK_COUNT];
 
 	//Initialize position to MAX to indicate that it has no position as of yet
-	const uint32_t startPos = UINT32_MAX;
-	for (int i = 0; i < CHUNK_COUNT; ++i) {
-		mChunkList->position = glm::ivec3(startPos, startPos, startPos);
-	}
 	/*mChunkPositions = new glm::vec3[CHUNK_COUNT];*/
 
 	pregenerateChunks();
 }
 
+void Terrain::invalidateChunkPositions() {
+	const uint32_t startPos = UINT32_MAX;
+	for (int i = 0; i < CHUNK_COUNT; ++i) {
+		mChunkList[i].position = glm::ivec3(startPos, startPos, startPos);
+	}
+}
 glm::ivec3 Terrain::getCameraChunk() const {
-	return getChunkIndex(mCamera->getPosition());
-	//FIXME: this is the value used for the camera indexing but is wrong for other chunks
-	//glm::vec3((CHUNK_SIZE / 2), -(int(CHUNK_SIZE) / 2), (CHUNK_SIZE / 2)))
+	glm::vec3 cameraPosition = mCamera->getPosition();
+	return getChunkIndex(cameraPosition - glm::vec3(int(CHUNK_SIZE)/2, int(CHUNK_SIZE)/2, int(CHUNK_SIZE)/2));
 }
 
 glm::ivec3 Terrain::getChunkIndex(const glm::vec3& position) const {
 	glm::ivec3 chunkIndex =
-		glm::ivec3( position) / int(CHUNK_SIZE);
+		glm::ivec3(position) / int(CHUNK_SIZE);
+	//glm::vec3((CHUNK_SIZE / 2), -(int(CHUNK_SIZE) / 2), (CHUNK_SIZE / 2)))
 	return chunkIndex;
 }
 
@@ -103,18 +105,20 @@ uint32_t Terrain::getChunkArrayIndex(const glm::vec3& position) const {
 
 
 void Terrain::updateChunkPositions() {
-	glm::ivec3 cameraPosition = getCameraChunk() * int(CHUNK_SIZE);
 	glm::ivec3 cameraChunk = getCameraChunk();
+	glm::ivec3 cameraPosition = cameraChunk * int(CHUNK_SIZE);
 
 	//TODO: start from the camera chunk and work outwards. Currently loading occurs from one way so
 	//when switching between planes the loading is quite terrible
 	for(int x = 0; x < VERTICAL_CHUNK_COUNT; x++) {
 		for(int y = 0; y < HORIZONTAL_CHUNK_COUNT; y++) {
 			for(int z = 0; z < VERTICAL_CHUNK_COUNT; z++) {
+
 				const glm::ivec3 position = glm::ivec3(
 						(x - int(VERTICAL_CHUNK_COUNT - 1) / 2) * 32.0,
 						(y - int(HORIZONTAL_CHUNK_COUNT - 1) / 2) * 32.0,
-						(z - int(VERTICAL_CHUNK_COUNT - 1) / 2) * 32.0) + cameraPosition;
+						(z - int(VERTICAL_CHUNK_COUNT - 1) / 2) * 32.0)
+					+ cameraPosition;
 				const uint32_t flatidx = getChunkArrayIndex(position);
 				const glm::ivec3 chunkIndex = getChunkIndex(position);
 
@@ -131,12 +135,13 @@ void Terrain::updateChunkPositions() {
 }
 
 void Terrain::pregenerateChunks() {
+	invalidateChunkPositions();
 	updateChunkPositions();
 	generateChunks(false);
 }
 
 void Terrain::generateChunks(bool limit) {
-	const static uint32_t CHUNKS_PER_FRAME = 5;
+	const static uint32_t CHUNKS_PER_FRAME = 10;
 
 	glDisable(GL_DEPTH_TEST);
 	glViewport(0, 0, DENSITY_TEXTURE_BOUNDS, DENSITY_TEXTURE_BOUNDS);
@@ -275,7 +280,7 @@ void Terrain::render() {
 		Program* render = ShaderManager::getInstance()->getShader("rendering");
 		render->useProgram();
 		c->render();
-		c->renderBoundingBox();
+		//c->renderBoundingBox();
 	}
 }
 

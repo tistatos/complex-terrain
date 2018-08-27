@@ -102,13 +102,14 @@ void Chunk::generateBuffers() {
 }
 
 void Chunk::fill() {
-	glBindBuffer(GL_ARRAY_BUFFER, mVertexBuffer);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(chunkVertex) * MAX_VERTICES, NULL, GL_STATIC_COPY);
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
-	//glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mIndexBuffer);
-	//glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(int) * MAX_INDICIES, NULL, GL_STATIC_COPY);
-	//glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-
+	if(mEmpty) {
+		glBindBuffer(GL_ARRAY_BUFFER, mVertexBuffer);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(chunkVertex) * MAX_VERTICES, NULL, GL_STATIC_COPY);
+		glBindBuffer(GL_ARRAY_BUFFER, 0);
+		//glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mIndexBuffer);
+		//glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(int) * MAX_INDICIES, NULL, GL_STATIC_COPY);
+		///glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+	}
 	mEmpty = false;
 }
 

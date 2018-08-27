@@ -103,11 +103,17 @@ float calculateDensity(ivec3 blockPosition) {
 	vec3 worldPosition = vec3(blockPosition+chunkWorldPosition-vec3(16.0));
 	//vec3 worldPosition = vec3(blockPosition+chunkWorldPosition);
 
-	//float density = distance(vec3(0.0), worldPosition) < 5.0 ? 1.0 : -1.0;
 	float density = -worldPosition.y;
-	density -= 6.9*snoise(worldPosition/30.0);
-	density -= 2*snoise(worldPosition/5.0);
-	density -= 1.0*snoise(worldPosition/2.0);
+	vec3 warp = vec3(
+			snoise(worldPosition * 0.02),
+			snoise((worldPosition + vec3(1.0)) * 0.01),
+			snoise((worldPosition - vec3(1.0)) * 0.02));
+	density -= 86.9*snoise((worldPosition+warp*20)/240.0);
+	density -= 32*snoise((worldPosition+warp*20)/80.0);
+	density -= 22*snoise((worldPosition+warp*20)/50.0);
+	density -= 12*snoise((worldPosition+warp*20)/25.0);
+	//density -= 1.0*snoise((worldPosition+warp*20)/9.0);
+
 
 	return density;
 }

@@ -39,6 +39,7 @@ CTEngine::CTEngine(const char* name)
 	: mMovementSpeed(1.0f)
 	, mLookSpeed(10.0f)
 	, mCaptureCursor(true)
+	, mRefreshShaderDebounce(false)
 	{
 	mRunning = false;
 	sprintf(mTitle, "%s", name);
@@ -145,9 +146,16 @@ void CTEngine::update(double dt) {
 	}
 
 	if(glfwGetKey(mWindow, GLFW_KEY_F5)) {
-		std::cout << "updating shaders...";
-		ShaderManager::getInstance()->updateShaders();
-		std::cout << "Done!" << std::endl;
+		if(mRefreshShaderDebounce != true) {
+			std::cout << "Updating shaders...";
+			ShaderManager::getInstance()->updateShaders();
+			std::cout << "Done!" << std::endl;
+			mRefreshShaderDebounce = true;
+			mTerrain.pregenerateChunks();
+		}
+	}
+	else {
+		mRefreshShaderDebounce = false;
 	}
 
 	if(glfwGetMouseButton(mWindow, GLFW_MOUSE_BUTTON_RIGHT)) {
