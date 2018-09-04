@@ -1,6 +1,9 @@
 #version 420 core
 precision mediump float;
 
+const int TEXTURE_MARGIN = 8;
+const int TEXTURE_SIZE = 32;
+
 in ivec3 voxelPosition[];
 out vec4 worldPosition;
 out vec3 normal;
@@ -66,8 +69,9 @@ const ivec3 vert_to_texcoord[8] = {
 	ivec3(1, 0, 1)  // v7
 };
 
+//Samples density texture with central difference to calculate the gradient
 vec3 getGradient(vec3 uvw) {
-	float densityTextureSize = 32.0 + 2.0 * 2.0;
+	float densityTextureSize = TEXTURE_SIZE + (2.0 * TEXTURE_MARGIN);
 	float d = 1.0/densityTextureSize;
 
 	vec3 gradient;
@@ -79,7 +83,7 @@ vec3 getGradient(vec3 uvw) {
 	gradient.z = texture(density, uvw + vec3(0, 0, d)).x -
 		texture(density, uvw + vec3(-d, 0, -d)).x;
 
-	return gradient;
+	return -normalize(gradient);
 }
 
 const vec3 rayDirections[32] = {
@@ -118,101 +122,101 @@ vec3(0.344460, 0.753223 	 , -0.560359)
 };
 
 float calculateAmbient(vec3 pos) {
+	const int RAY_COUNT = 32;
 	float visibility = 0.0;
-	float densityTextureSize = 32.0 + 2.0 * 2.0;
-	float rstep = 1.0/densityTextureSize;
-	for(int i = 0; i < 32; i++) {
+	float d = 1.0 / (TEXTURE_SIZE + (2 * TEXTURE_MARGIN));
+	vec3 UVW = (pos.xyz + TEXTURE_MARGIN) * d;
+	for(int i = 0; i < RAY_COUNT; i++) {
 		float thisRay = 1.0;
 		vec3 dir = rayDirections[i];
 		for(int j = 1; j < 8; j++) {
-			/*float d = texture(density, pos + dir * j*0.00).r;*/
-			float d = texture(density, pos+dir*rstep*0.01).r;
-			thisRay *= clamp(d*9999, 0.0, 1.0);
+			float v = texture(density, UVW+dir*d*j).r;
+			thisRay *= clamp(v*8, 0.0, 1.0);
 		}
 		visibility += thisRay;
 	}
-	return (1 - visibility / 32.0);
+	return (1 - visibility / RAY_COUNT);
 }
 
-void main() {
-	ivec3 position = voxelPosition[0];
+float interpolate(float a, float b) {
+	return (a - min(a,b)) / abs(a - b);
+}
 
-	//Get the density values in the corners of the voxel to Determine marching cube case
+
+void main() {
+	//position within voxel
+	ivec3 positionInVoxel = voxelPosition[0];
+
+	//Get the density values in the corners of the voxel to determine marching cube case
 	uint caseID = 0;
 	for (int i = 7; i >= 0; --i)
-		caseID = caseID | ((texelFetch(density, 2 + position + voxelVerts[i], 0).r > 0) ? 1 : 0) << i;
+		caseID = caseID | ((texelFetch(density, TEXTURE_MARGIN + positionInVoxel + voxelVerts[i], 0).r
+		> 0.0) ? 1 : 0) << i;
 	uint triangles = edgeTable[caseID];
 
+	//offset the chunk position to be in the middle of the chunk instead of corner
 	vec4 chunkPosition = vec4(chunkWorldPosition-vec3(16.0), 0.0);
+
 	//Create triangles by:
 	// 1. Get edges for this triangle
 	// 2. get the edge-vertices of the edge
 	// 3. determine the interpolated density value on the edge to create a new vertex there
+	float d = 1.0 / (TEXTURE_SIZE + 2 * TEXTURE_MARGIN);
 	for(uint i = 0; i < triangles; i++) {
 		// Compute the vertex position
 		uint edge = texelFetch(triTable, ivec2(3 * i + 0, caseID), 0).r;
-		ivec2 verts = edgeToVertices[edge];
-		float firstVertexDensityValue = texelFetch(density, vert_to_texcoord[verts.x],
-				0).r;
-		float secondVertexDensityValue = texelFetch(density, vert_to_texcoord[verts.y],
-				0).r;
-		ivec3 EdgeVert1 = vert_to_texcoord[verts.x] + position;
-		ivec3 EdgeVert2 = vert_to_texcoord[verts.y] + position;
+		ivec2 edgeVertices = edgeToVertices[edge];
 
-		//float interpolation = clamp(firstVertexDensityValue /
-				//(firstVertexDensityValue - secondVertexDensityValue), 0.0, 1.0);
-		float interpolation = 0.5;
-		vec4 vertexPosition = vec4(
-				EdgeVert1 * (1.0-interpolation) + EdgeVert2 * interpolation, 1.0);
+		ivec3 EdgeVert1 = vert_to_texcoord[edgeVertices.x] + positionInVoxel;
+		ivec3 EdgeVert2 = vert_to_texcoord[edgeVertices.y] + positionInVoxel;
+		float firstVertexDensityValue = texelFetch(density, EdgeVert1 + TEXTURE_MARGIN,0).r;
+		float secondVertexDensityValue = texelFetch(density, EdgeVert2 + TEXTURE_MARGIN, 0).r;
 
-		float d = 1.0 / (33 + 2 * 2);
-		vec3 UVW = (vertexPosition.xyz + 2) * d;
-		vec3 gradient = getGradient(UVW);
-		float ambient = calculateAmbient(UVW);
-		normal = -normalize(gradient);
-		worldPosition = vertexPosition + chunkPosition;
-		worldPosition.w = ambient;
+		float t = interpolate(firstVertexDensityValue, secondVertexDensityValue);
+
+		worldPosition = vec4( EdgeVert1 * (1.0-t) + EdgeVert2 * t, 1.0);
+
+		vec3 UVW = (worldPosition.xyz + TEXTURE_MARGIN) * d;
+
+		normal = getGradient(UVW);
+		worldPosition.w = calculateAmbient(worldPosition.xyz);
+		worldPosition += chunkPosition;
 		EmitVertex();
-
 
 
 		edge = texelFetch(triTable, ivec2(3 * i + 1, caseID), 0).r;
-		verts = edgeToVertices[edge];
-		firstVertexDensityValue = texelFetch(density, vert_to_texcoord[verts.x], 0).r;
-		secondVertexDensityValue = texelFetch(density, vert_to_texcoord[verts.y], 0).r;
-		EdgeVert1 = vert_to_texcoord[verts.x] + position;
-		EdgeVert2 = vert_to_texcoord[verts.y] + position;
+		edgeVertices = edgeToVertices[edge];
+		EdgeVert1 = vert_to_texcoord[edgeVertices.x] + positionInVoxel;
+		EdgeVert2 = vert_to_texcoord[edgeVertices.y] + positionInVoxel;
+		firstVertexDensityValue = texelFetch(density, EdgeVert1 + TEXTURE_MARGIN, 0).r;
+		secondVertexDensityValue = texelFetch(density, EdgeVert2 + TEXTURE_MARGIN, 0).r;
 
-		//interpolation = clamp(firstVertexDensityValue /
-				//(firstVertexDensityValue - secondVertexDensityValue), 0.0, 1.0);
+		t = interpolate(firstVertexDensityValue, secondVertexDensityValue);
 		worldPosition = vec4(
-				EdgeVert1 * (1.0-interpolation) + EdgeVert2 * interpolation, 1.0);
-		UVW = (worldPosition.xyz + 2) * d;
-		gradient = getGradient(UVW);
-		normal = -normalize(gradient);
+				EdgeVert1 * (1.0-t) + EdgeVert2 * t, 1.0);
+		UVW = (worldPosition.xyz + TEXTURE_MARGIN) * d;
+
+		normal = getGradient(UVW);
+		worldPosition.w = calculateAmbient(worldPosition.xyz);
 		worldPosition += chunkPosition;
-		ambient = calculateAmbient(UVW);
-		worldPosition.w = ambient;
 		EmitVertex();
 
 		edge  = texelFetch(triTable, ivec2(3 * i + 2, caseID), 0).r;
-		verts = edgeToVertices[edge];
-		firstVertexDensityValue = texelFetch(density, vert_to_texcoord[verts.x], 0).r;
-		secondVertexDensityValue = texelFetch(density, vert_to_texcoord[verts.y], 0).r;
-		EdgeVert1 = vert_to_texcoord[verts.x] + position;
-		EdgeVert2 = vert_to_texcoord[verts.y] + position;
+		edgeVertices = edgeToVertices[edge];
+		EdgeVert1 = vert_to_texcoord[edgeVertices.x] + positionInVoxel;
+		EdgeVert2 = vert_to_texcoord[edgeVertices.y] + positionInVoxel;
+		firstVertexDensityValue = texelFetch(density, EdgeVert1 + TEXTURE_MARGIN, 0).r;
+		secondVertexDensityValue = texelFetch(density, EdgeVert2 + TEXTURE_MARGIN, 0).r;
 
-		//interpolation = clamp(firstVertexDensityValue /
-				//(firstVertexDensityValue - secondVertexDensityValue), 0.0, 1.0);
+		t = interpolate(firstVertexDensityValue, secondVertexDensityValue);
 		worldPosition = vec4(
-				EdgeVert1 * (1.0-interpolation) + EdgeVert2 * interpolation, 1.0);
+				EdgeVert1 * (1.0-t) + EdgeVert2 * t, 1.0);
 
-		UVW = (worldPosition.xyz + 2) * d;
-		gradient = getGradient(UVW);
-		normal = -normalize(gradient);
+		UVW = (worldPosition.xyz + TEXTURE_MARGIN) * d;
+
+		normal = getGradient(UVW);
+		worldPosition.w = calculateAmbient(worldPosition.xyz);
 		worldPosition += chunkPosition;
-		ambient = calculateAmbient(UVW);
-		worldPosition.w = ambient;
 		EmitVertex();
 	}
 }
