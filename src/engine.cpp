@@ -74,7 +74,7 @@ bool CTEngine::initialize() {
 	glewInit();
 
 	// During init, enable debug output
-	glEnable              ( GL_DEBUG_OUTPUT );
+	//glEnable              ( GL_DEBUG_OUTPUT );
 	glDebugMessageCallback( OpenGLDebugger::MessageCallback, 0 );
 
 	//get initial position of mouse
@@ -159,13 +159,19 @@ void CTEngine::update(double dt) {
 	}
 
 	if(glfwGetMouseButton(mWindow, GLFW_MOUSE_BUTTON_RIGHT)) {
-		if(mCaptureCursor)
-			glfwSetInputMode(mWindow, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-		else
-			glfwSetInputMode(mWindow, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-
-		mCaptureCursor = !mCaptureCursor;
+		if(!mCaptureCursorDebounce) {
+			if(mCaptureCursor)
+				glfwSetInputMode(mWindow, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+			else
+				glfwSetInputMode(mWindow, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+			mCaptureCursor = !mCaptureCursor;
+			mCaptureCursorDebounce = true;
+		}
 	}
+	else {
+		mCaptureCursorDebounce = false;
+	}
+
 
 	double mouseX, mouseY;
 	glfwGetCursorPos(mWindow, &mouseX, &mouseY);
