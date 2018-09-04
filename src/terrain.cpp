@@ -14,9 +14,11 @@
 #include "utils.h"
 
 #include <glm/gtx/string_cast.hpp>
-static const uint32_t DENSITY_TEXTURE_MARGINS = 2;
+static const uint32_t DENSITY_TEXTURE_MARGINS = 8;
 static const uint32_t DENSITY_TEXTURE_SIZE = 33;
 static const uint32_t DENSITY_TEXTURE_BOUNDS = DENSITY_TEXTURE_SIZE + 2 * DENSITY_TEXTURE_MARGINS;
+
+static const bool NEW_CHUNKS = true;
 
 void Terrain::initialize(Camera* camera) {
 	//Set camera and get its intial chunk index position
@@ -157,6 +159,7 @@ void Terrain::generateChunks(bool limit) {
 		chunksLoadedThisFrame++;
 		mChunkLoadQueue.pop();
 	}
+
 	//if(chunksLoadedThisFrame >= CHUNKS_PER_FRAME)
 		//std::cout << "Max chunk per frame met" << std::endl;
 }
@@ -168,6 +171,19 @@ void Terrain::buildDensity(Chunk* c) {
 	//generate density texture for this chunk
 	glUniform3i(glGetUniformLocation(*p, "chunkWorldPosition"), c->position.x, c->position.y, c->position.z);
 	glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, DENSITY_TEXTURE_BOUNDS);
+
+	glFlush();
+	float DensityValues[DENSITY_TEXTURE_BOUNDS * DENSITY_TEXTURE_BOUNDS * DENSITY_TEXTURE_BOUNDS];
+	glBindTexture(GL_TEXTURE_3D, mDensityMap);
+	glGetTexImage(GL_TEXTURE_3D, 0, GL_RED, GL_FLOAT, DensityValues);
+	for(uint32_t i = 0; i < DENSITY_TEXTURE_BOUNDS; i++) {
+		int idx = getChunkArrayIndex(c->position);
+		char filename[64];
+		sprintf(filename, "chunk%i_density%i.ppm", idx, i);
+		utils::SavePPMFile(filename,
+		DENSITY_TEXTURE_BOUNDS, DENSITY_TEXTURE_BOUNDS,
+		&DensityValues[i*DENSITY_TEXTURE_BOUNDS*DENSITY_TEXTURE_BOUNDS]);
+	}
 }
 
 void Terrain::generateVertices(Chunk* c) {
@@ -280,7 +296,7 @@ void Terrain::render() {
 		Program* render = ShaderManager::getInstance()->getShader("rendering");
 		render->useProgram();
 		c->render();
-		//c->renderBoundingBox();
+		c->renderBoundingBox();
 	}
 }
 
@@ -289,7 +305,7 @@ void Terrain::update() {
 	glm::ivec3 currentCameraChunk = getCameraChunk();
 
 	//Camera is in new chunk - update chunk positions
-	if(currentCameraChunk != mCameraChunk) {
+	if(NEW_CHUNKS && currentCameraChunk != mCameraChunk) {
 		std::cout << "transition from chunk: " << glm::to_string(mCameraChunk) << " to:" << glm::to_string(currentCameraChunk) << std::endl;
 		markOutOfBoundChunks();
 		updateChunkPositions();
