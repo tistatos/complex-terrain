@@ -2,12 +2,13 @@
 precision mediump float;
 
 const int TEXTURE_MARGIN = 8;
-const int TEXTURE_SIZE = 32;
+const int TEXTURE_SIZE = 33;
 
 in ivec3 voxelPosition[];
 out vec4 worldPosition;
 out vec3 normal;
 
+//The chunks position in world space
 uniform vec3 chunkWorldPosition;
 
 layout(points) in;
@@ -216,7 +217,7 @@ float snoise(vec3 v)
 
 float calculateDensity(vec3 worldPosition) {
 	/// Sphere
-	float density = 32.0 - distance(worldPosition, vec3(0,0,0));
+	float density =	(16 - distance(worldPosition, vec3(0,0,0)));
 	/*vec3 warp = vec3(*/
 			/*snoise(worldPosition * 0.02),*/
 			/*snoise((worldPosition + vec3(1.0)) * 0.01),*/
@@ -233,6 +234,7 @@ float calculateDensity(vec3 worldPosition) {
 	/*density -= 32*snoise((worldPosition+warp*20)/80.0);*/
 	/*density -= 22*snoise((worldPosition+warp*20)/50.0);*/
 	/*density -= 12*snoise((worldPosition+warp*20)/25.0);*/
+	/*density -= 6*snoise((worldPosition+warp*20)/55.0);*/
 	/*density -= 1.0*snoise((worldPosition+warp*20)/9.0);*/
 
 	return density;
@@ -242,13 +244,22 @@ float calculateAmbient(vec3 pos) {
 	const int RAY_COUNT = 32;
 	float visibility = 0.0;
 	float d = 1.0 / (TEXTURE_SIZE + (2 * TEXTURE_MARGIN));
+	//Calculate AO using texture
 	vec3 UVW = (pos.xyz + TEXTURE_MARGIN) * d;
 	for(int i = 0; i < RAY_COUNT; i++) {
 		float thisRay = 1.0;
 		vec3 dir = rayDirections[i];
-		for(int j = 1; j < 8; j++) {
+		for(int j = 1; j < 8; j ++) {
 			float v = texture(density, UVW+dir*d*j).r;
-			thisRay *= clamp(v*8, 0.0, 1.0);
+			thisRay *= clamp(v*9999, 0.0, 1.0);
+		}
+
+		//calculate AO in worldspace using density function
+		vec3 chunkPosition = vec3(chunkWorldPosition+vec3(-16.0));
+		float stepSize = 1.0;
+		for(int j = 5; j < 5; j++) {
+			float v = calculateDensity(pos+chunkPosition+dir*j*stepSize);
+			thisRay *= clamp(v*9999, 0.0, 1.0);
 		}
 		visibility += thisRay;
 	}
@@ -256,7 +267,7 @@ float calculateAmbient(vec3 pos) {
 }
 
 float interpolate(float a, float b) {
-	return (a - min(a,b)) / abs(a - b);
+	return clamp(a / (a-b), 0.0, 1.0);
 }
 
 
@@ -291,13 +302,13 @@ void main() {
 
 		float t = interpolate(firstVertexDensityValue, secondVertexDensityValue);
 
-		worldPosition = vec4( EdgeVert1 * (1.0-t) + EdgeVert2 * t, 1.0);
+		vec4 vertexVoxelPosition = vec4( EdgeVert1 * (1.0-t) + EdgeVert2 * t, 1.0);
 
-		vec3 UVW = (worldPosition.xyz + TEXTURE_MARGIN) * d;
+		vec3 UVW = (vertexVoxelPosition.xyz + TEXTURE_MARGIN) * d;
 
 		normal = getGradient(UVW);
-		worldPosition.w = calculateAmbient(worldPosition.xyz);
-		worldPosition += chunkPosition;
+		worldPosition = vertexVoxelPosition + chunkPosition;
+		worldPosition.w = calculateAmbient(vertexVoxelPosition.xyz);
 		EmitVertex();
 
 
@@ -309,13 +320,13 @@ void main() {
 		secondVertexDensityValue = texelFetch(density, EdgeVert2 + TEXTURE_MARGIN, 0).r;
 
 		t = interpolate(firstVertexDensityValue, secondVertexDensityValue);
-		worldPosition = vec4(
+		vertexVoxelPosition = vec4(
 				EdgeVert1 * (1.0-t) + EdgeVert2 * t, 1.0);
-		UVW = (worldPosition.xyz + TEXTURE_MARGIN) * d;
+		UVW = (vertexVoxelPosition.xyz + TEXTURE_MARGIN) * d;
 
 		normal = getGradient(UVW);
-		worldPosition.w = calculateAmbient(worldPosition.xyz);
-		worldPosition += chunkPosition;
+		worldPosition = vertexVoxelPosition + chunkPosition;
+		worldPosition.w = calculateAmbient(vertexVoxelPosition.xyz);
 		EmitVertex();
 
 		edge  = texelFetch(triTable, ivec2(3 * i + 2, caseID), 0).r;
@@ -326,14 +337,14 @@ void main() {
 		secondVertexDensityValue = texelFetch(density, EdgeVert2 + TEXTURE_MARGIN, 0).r;
 
 		t = interpolate(firstVertexDensityValue, secondVertexDensityValue);
-		worldPosition = vec4(
+		vertexVoxelPosition = vec4(
 				EdgeVert1 * (1.0-t) + EdgeVert2 * t, 1.0);
 
-		UVW = (worldPosition.xyz + TEXTURE_MARGIN) * d;
+		UVW = (vertexVoxelPosition.xyz + TEXTURE_MARGIN) * d;
 
 		normal = getGradient(UVW);
-		worldPosition.w = calculateAmbient(worldPosition.xyz);
-		worldPosition += chunkPosition;
+		worldPosition = vertexVoxelPosition + chunkPosition;
+		worldPosition.w = calculateAmbient(vertexVoxelPosition.xyz);
 		EmitVertex();
 	}
 }
