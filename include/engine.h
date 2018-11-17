@@ -24,8 +24,8 @@ class Camera;
 
 struct FPSCounter {
 	double timePassed;
-	double latestCount;
 	int frameCount;
+	double latestCount;
 
 	FPSCounter() : timePassed(0), frameCount(0), latestCount(0) { }
 
@@ -51,7 +51,12 @@ public:
 	void run();
 
 	bool running() { return mRunning; }
+	void stopRunning() { mRunning = false; }
 
+	static glm::vec3 getUpVector() { return glm::vec3(0.0f, 1.0f, 0.0f); }
+
+	static void keyCallbackFunction(GLFWwindow* window, int key, int scancode, int action, int mods);
+	static void mouseCallbackFunction(GLFWwindow* window, int key, int action, int mods);
 private:
 	Camera* mCamera;
 	Terrain mTerrain;
@@ -62,9 +67,7 @@ private:
 
 	bool mRunning;
 	bool mCaptureCursor;
-
-	bool mRefreshShaderDebounce;
-	bool mCaptureCursorDebounce;
+	bool mDetachCameraFrustum;
 
 	float mMovementSpeed;
 	float mLookSpeed;

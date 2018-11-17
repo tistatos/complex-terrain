@@ -13,7 +13,7 @@
 #include "gui.h"
 #include "shaderManager.h"
 
-GUI::GUI(): mFontSize(22.0f) { }
+GUI::GUI(): mFontSize(12.0f) { }
 
 bool GUI::initialize() {
 	if(FT_Init_FreeType(&mLibrary))

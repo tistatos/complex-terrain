@@ -7,6 +7,7 @@
 
 #include "camera.h"
 #include "chunk.h"
+#include "frustum.h"
 #include "marchingCubeLoopkup.h"
 #include "shader.h"
 #include "shaderManager.h"
@@ -23,6 +24,20 @@ static const uint32_t DENSITY_TEXTURE_SIZE = 33;
 static const uint32_t DENSITY_TEXTURE_BOUNDS = DENSITY_TEXTURE_SIZE + 2 * DENSITY_TEXTURE_MARGINS;
 
 static const bool NEW_CHUNKS = false;
+
+Terrain::Terrain() :
+	mCamera(nullptr),
+	mDensityMap(0),
+	mTriTable(0),
+	mVertexFeedbackBuffer(0),
+	mVertexFeedbackObject(0),
+	mGeoVertexArrayObject(0),
+	mGeoBuffer(0),
+	mGenVertexArrayObject(0),
+	mGenBuffer(0),
+	mEmptyChunks(0),
+	mCulledChunks(0)
+{ }
 
 void Terrain::initialize(Camera* camera) {
 	//Set camera and get its intial chunk index position
@@ -101,7 +116,7 @@ void Terrain::initialize(Camera* camera) {
 void Terrain::invalidateChunkPositions() {
 	const uint32_t startPos = UINT32_MAX;
 	for (int i = 0; i < CHUNK_COUNT; ++i) {
-		mChunkList[i].position = glm::ivec3(startPos, startPos, startPos);
+		mChunkList[i].setPosition(glm::ivec3(startPos, startPos, startPos));
 	}
 }
 glm::ivec3 Terrain::getCameraChunk() const {
@@ -145,14 +160,19 @@ void Terrain::updateChunkPositions() {
 						(z - int(XZ_CHUNK_COUNT - 1) / 2) * 32.0)
 					+ cameraPosition;
 				const uint32_t flatidx = getChunkArrayIndex(position);
-				const glm::ivec3 chunkIndex = getChunkIndex(position);
-
 				const uint32_t idx = flatidx;
 
 				Chunk* c = &mChunkList[idx];
-				if(c->position != position)  {
-					c->position = position;
-					mChunkLoadQueue.push(c);
+				if(c->getPosition() != position)  {
+					c->setPosition(position);
+					if(!mCamera->getFrustum().intersects(c->getBoundingBox())) {
+						mChunkLoadQueue.push_back(c);
+					}
+					else {
+						//FIXME: this prio doesn't work as expected, the chunk in front DO get prio but the one
+						//that is the farthest away gets it.
+						mChunkLoadQueue.push_front(c);
+					}
 				}
 			}
 		}
@@ -160,13 +180,13 @@ void Terrain::updateChunkPositions() {
 }
 
 void Terrain::pregenerateChunks() {
-	invalidateChunkPositions();
+	//invalidateChunkPositions();
 	updateChunkPositions();
 	generateChunks(false);
 }
 
 void Terrain::generateChunks(bool limit) {
-	const static uint32_t CHUNKS_PER_FRAME = 10;
+	const static uint32_t CHUNKS_PER_FRAME = 3;
 
 	glDisable(GL_DEPTH_TEST);
 	glViewport(0, 0, DENSITY_TEXTURE_BOUNDS, DENSITY_TEXTURE_BOUNDS);
@@ -180,7 +200,7 @@ void Terrain::generateChunks(bool limit) {
 		buildDensity(c);
 		generateVertices(c);
 		chunksLoadedThisFrame++;
-		mChunkLoadQueue.pop();
+		mChunkLoadQueue.pop_front();
 	}
 
 	//if(chunksLoadedThisFrame >= CHUNKS_PER_FRAME)
@@ -192,7 +212,8 @@ void Terrain::buildDensity(Chunk* c) {
 	Program* p = ShaderManager::getInstance()->getShader("densityProgram");
 	p->useProgram();
 	//generate density texture for this chunk
-	glUniform3i(glGetUniformLocation(*p, "chunkWorldPosition"), c->position.x, c->position.y, c->position.z);
+	const glm::ivec3 pos = c->getPosition();
+	glUniform3i(glGetUniformLocation(*p, "chunkWorldPosition"), pos.x, pos.y, pos.z);
 	glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, DENSITY_TEXTURE_BOUNDS);
 
 	//glFlush();
@@ -217,7 +238,8 @@ void Terrain::generateVertices(Chunk* c) {
 	Program* p = ShaderManager::getInstance()->getShader("vertexProgram");
 	p->useProgram();
 	//set value of chunk position
-	glUniform3f(glGetUniformLocation(*p, "chunkWorldPosition"), c->position.x, c->position.y, c->position.z);
+	const glm::ivec3 pos = c->getPosition();
+	glUniform3f(glGetUniformLocation(*p, "chunkWorldPosition"), pos.x, pos.y, pos.z);
 
 	//skip rasterization
 	glEnable(GL_RASTERIZER_DISCARD);
@@ -305,22 +327,32 @@ void Terrain::createShaders() {
 void Terrain::markOutOfBoundChunks() {
 	for (int i = 0; i < CHUNK_COUNT; ++i) {
 		Chunk* c = &mChunkList[i];
-		const glm::vec3& chunkPosition = c->position;
+		const glm::ivec3& chunkPosition = c->getPosition();
 		const glm::vec3& cameraPosition =mCamera->getPosition();
 		if(
 			abs(chunkPosition.x - cameraPosition.x) > (XZ_CHUNK_COUNT * CHUNK_SIZE) ||
 			abs(chunkPosition.y - cameraPosition.y) > (Y_CHUNK_COUNT * CHUNK_SIZE) ||
 			abs(chunkPosition.z - cameraPosition.z) > (XZ_CHUNK_COUNT * CHUNK_SIZE) ) {
-			mChunkLoadQueue.push(c);
+			mChunkLoadQueue.push_back(c);
 		}
 	}
 }
 
-//TODO: add culling to improve fps - intial culling should be on chunks
 void Terrain::render() {
+	mEmptyChunks = 0;
+	mCulledChunks = 0;
+	Program* render = ShaderManager::getInstance()->getShader("rendering");
 	for(unsigned int i = 0; i < CHUNK_COUNT; ++i) {
 		Chunk* c = &mChunkList[i];
-		Program* render = ShaderManager::getInstance()->getShader("rendering");
+		if(!mCamera->frustumDetached() && !mCamera->getFrustum().intersects(c->getBoundingBox())) {
+			mCulledChunks++;
+			continue;
+		}
+
+		if(c->isEmpty()) {
+			mEmptyChunks++;
+		}
+
 		render->useProgram();
 		c->render();
 		c->renderBoundingBox();

@@ -9,6 +9,7 @@
 #define __MESH_H__
 #include <GL/glew.h>
 
+class Frustum;
 struct Vertex;
 
 class Mesh {
@@ -22,8 +23,10 @@ public:
 	const GLuint& getIndexBuffer() const { return mIBO; }
 
 	const void renderMesh() const;
+	const void renderLines() const;
 
-	static Mesh createCube();
+	static Mesh createCube(const float cubeSize = 1.0f, const bool outlinesOnly = false);
+	static Mesh createFrustum(const Frustum* frustum);
 
 private:
 	GLuint mVAO;

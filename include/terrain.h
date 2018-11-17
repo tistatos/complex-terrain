@@ -17,10 +17,14 @@ class Camera;
 
 class Terrain {
 public:
+	Terrain();
 	void initialize(Camera* camera);
 	void render();
 	void update();
 	void pregenerateChunks();
+
+	const unsigned int getCulledChunks() const { return mCulledChunks; }
+	const unsigned int getEmptyChunks() const { return mEmptyChunks; }
 
 private:
 	void createShaders();
@@ -40,6 +44,7 @@ private:
 	glm::ivec3 getCameraChunk() const;
 	glm::ivec3 getChunkIndex(const glm::vec3& position) const;
 	uint32_t getChunkArrayIndex(const glm::vec3& position) const;
+
 	//camera
 	Camera* mCamera;
 	glm::vec3 mLastCameraPosition;
@@ -54,18 +59,21 @@ private:
 	GLuint mVertexFeedbackObject;
 	//GLuint mVertexFeedbackArrayObject;
 
-	//Vertex generation points
+	//density generation points
 	GLuint mGeoVertexArrayObject;
 	GLuint mGeoBuffer;
 
+	//Vertex generation points
 	GLuint mGenVertexArrayObject;
 	GLuint mGenBuffer;
 
 	//list of all chunks
 	Chunk* mChunkList;
+	unsigned int mEmptyChunks;
+	unsigned int mCulledChunks;
 
 	//list of chunks to be generated
-	std::queue<Chunk*> mChunkLoadQueue;
+	std::deque<Chunk*> mChunkLoadQueue;
 
 	/*glm::vec3* mChunkPositions;*/
 };
