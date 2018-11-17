@@ -1,7 +1,8 @@
 #version 420 core
 in vec3 vertexPosition;
 uniform vec3 position;
-uniform vec3 size;
+
+uniform mat4 m;
 
 layout(std140) uniform camera {
 	mat4 v;
@@ -10,5 +11,5 @@ layout(std140) uniform camera {
 };
 
 void main() {
-	gl_Position = vp*vec4((vertexPosition*size/2.0)+position, 1.0);
+	gl_Position = vp * m * vec4(vertexPosition, 1.0);
 }

@@ -16,3 +16,15 @@ make
 ```
 Done!
 
+
+### TODO:
+- frustum culling
+		- frustum visualization DONE
+		- detatch from camera: partially done, need to have camera matrix onto
+		- determine error
+- fog post processing
+- improved generation
+- profiling of draw time
+
+- dilation erosion on the density data to avoid the small dots that are present
+- only use quaternions for rotation

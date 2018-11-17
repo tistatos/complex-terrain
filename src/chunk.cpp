@@ -2,14 +2,19 @@
 * @file chunk.cpp
 * @author Erik Sandrén
 * @date 27-11-2016
-* @brief [Description Goes Here]
+* @brief Complex Terrain Chunk
 */
+
+#include <GL/glew.h>
+#include <GL/gl.h>
+#include <glm/gtx/transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
 
 #include "chunk.h"
 #include "shader.h"
 #include "shaderManager.h"
 
-Chunk::Chunk() {
+Chunk::Chunk() : mPosition (UINT32_MAX), mBoundingBox(glm::vec3(), glm::vec3()) {
 	mEmpty = true;
 	generateBuffers();
 	//mIndexCount = 0;
@@ -21,8 +26,6 @@ void Chunk::generateBuffers() {
 	glGenQueries(1, &mVertexCountQuery);
 	//glGenBuffers(1, &mIndexBuffer);
 	//glGenQueries(1, &mIndexQuery);
-
-	glGenBuffers(1, &mBoundingBoxBuffer);
 
 	//feedback for vertices
 	glGenTransformFeedbacks(1, &mVertexFeedback);
@@ -51,54 +54,13 @@ void Chunk::generateBuffers() {
 	//glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mIndexBuffer);
 	glBindVertexArray(0);
 
+	mBoundingBoxMesh = Mesh::createCube(16.0f, true);
+}
 
-	glGenVertexArrays(1, &mBoundingBoxArray);
-	glBindVertexArray(mBoundingBoxArray);
-	glBindBuffer(GL_ARRAY_BUFFER, mBoundingBoxBuffer);
-
-	static const glm::vec3 boundingBoxVertices[] = {
-		glm::vec3(-1.0f, -1.0f, -1.0f),
-		glm::vec3(1.0f, -1.0f, -1.0f),
-
-		glm::vec3(1.0f, -1.0f, -1.0f),
-		glm::vec3(1.0f, 1.0f, -1.0f),
-
-		glm::vec3(1.0f, 1.0f, -1.0f),
-		glm::vec3(-1.0f, 1.0f, -1.0f),
-
-		glm::vec3(-1.0f, 1.0f, -1.0f),
-		glm::vec3(-1.0f, -1.0f, -1.0f),
-
-		//
-		glm::vec3(-1.0f, -1.0f, 1.0f),
-		glm::vec3(1.0f, -1.0f, 1.0f),
-
-		glm::vec3(1.0f, -1.0f, 1.0f),
-		glm::vec3(1.0f, 1.0f, 1.0f),
-
-		glm::vec3(1.0f, 1.0f, 1.0f),
-		glm::vec3(-1.0f, 1.0f, 1.0),
-
-		glm::vec3(-1.0f, 1.0f, 1.0),
-		glm::vec3(-1.0f, -1.0f, 1.0f),
-
-		//
-		glm::vec3(-1.0f, -1.0f, -1.0f),
-		glm::vec3(-1.0f, -1.0f, 1.0f),
-
-		glm::vec3(1.0f, -1.0f, -1.0f),
-		glm::vec3(1.0f, -1.0f, 1.0f),
-
-		glm::vec3(-1.0f, 1.0f, -1.0f),
-		glm::vec3(-1.0f, 1.0f, 1.0f),
-
-		glm::vec3(1.0f, 1.0f, -1.0f),
-		glm::vec3(1.0f, 1.0f, 1.0f),
-	};
-	glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3)*12*2 , boundingBoxVertices, GL_STATIC_COPY);
-
-	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), 0);
+void Chunk::setPosition(const glm::ivec3& position) {
+	mPosition = position;
+	mBoundingBox.setMax(glm::vec3(16.0f) + glm::vec3(position));
+	mBoundingBox.setMin(glm::vec3(-16.0f) + glm::vec3(position));
 }
 
 void Chunk::fill() {
@@ -160,9 +122,10 @@ void Chunk::render() {
 void Chunk::renderBoundingBox() {
 	Program* bb = ShaderManager::getInstance()->getShader("bbox");
 	bb->useProgram();
-	glUniform3f(glGetUniformLocation(*bb, "position"),position.x, position.y, position.z);
-	glUniform3f(glGetUniformLocation(*bb, "size"), 32.0, 32.0, 32.0);
+	glm::mat4 m;
+	m = glm::translate(m, glm::vec3(mPosition));
+
+	glUniformMatrix4fv(glGetUniformLocation(*bb, "m"), 1, GL_FALSE, glm::value_ptr(m));
 	glUniform1i(glGetUniformLocation(*bb, "empty"), (mVertexCount > 0 ? 0 : 1));
-	glBindVertexArray(mBoundingBoxArray);
-	glDrawArrays(GL_LINES, 0, 24);
+	mBoundingBoxMesh.renderLines();
 }

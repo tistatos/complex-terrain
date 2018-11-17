@@ -8,9 +8,12 @@
 #ifndef __CHUNK_H__
 #define __CHUNK_H__
 
-#include <GL/glew.h>
-#include <GL/gl.h>
-#include <glm/glm.hpp>
+#include <glm/vec3.hpp>
+#include <glm/vec4.hpp>
+#include <glm/mat4x4.hpp>
+
+#include "AABBox.h"
+#include "mesh.h"
 
 typedef struct chunkVertex {
 	glm::vec4 position;
@@ -26,7 +29,13 @@ public:
 	Chunk();
 
 	void render();
+
 	void renderBoundingBox();
+	const AABBox& getBoundingBox() const { return mBoundingBox; }
+
+	const glm::ivec3& getPosition() const { return mPosition; }
+	void setPosition(const glm::ivec3& position);
+
 	//void setEmpty();
 	void fill();
 
@@ -37,7 +46,6 @@ public:
 
 	bool isEmpty() { return mEmpty; }
 
-	glm::ivec3 position;
 
 private:
 	void generateBuffers();
@@ -45,16 +53,22 @@ private:
 	GLuint mVertexBuffer;
 	uint32_t mVertexCount;
 
+	glm::ivec3 mPosition;
+
 	GLuint mVertexFeedback;
 	GLuint mVertexCountQuery;
+
 
 	//unsigned int mIndexCount;
 	//GLuint mIndexQuery;
 	//GLuint mIndexBuffer;
 	//GLuint mIndexFeedback;
-	//
-	GLuint mBoundingBoxArray;
-	GLuint mBoundingBoxBuffer;
+
+	AABBox mBoundingBox;
+	//GLuint mBoundingBoxArray;
+	//GLuint mBoundingBoxBuffer;
+
+	Mesh mBoundingBoxMesh;
 
 	bool mEmpty;
 };
