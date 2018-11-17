@@ -167,7 +167,12 @@ bool CTEngine::initialize() {
 
 	//initialize Terrain
 	//will generate the initial chunks
+	GameTimer generateTerrain;
+	generateTerrain.startTimer();
 	mTerrain.initialize(mCamera);
+	generateTerrain.stopTimer();
+
+	std::cout << "Time to generate terrain: " << generateTerrain.getDeltaTime() << std::endl;
 
 	mCamera->setPosition(glm::vec3(0, 0, -240));
 	mCamera->setFacing(glm::vec3(0, 0, 1));
@@ -232,7 +237,7 @@ void CTEngine::update(double dt) {
 
 void CTEngine::render(double dt) {
 	glViewport(0, 0, mWidth, mHeight);
-	glClearColor(0.3f, 0.3f, 0.3f, 0.0f);
+	glClearColor(0.6f, 0.6f, 0.6f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_CULL_FACE);
