@@ -23,7 +23,7 @@ Frustum::Frustum(const Camera* c) {
 	//These are half the width and height!
 	//FIXME: this should be the correct value
 	//however its not the case and all width and heights get too small
-	//const float tanFov = tan((fov * M_PI / 180.0) * 0.50);
+	//const float tanFov = tan((fov * M_PI / 180.0) * 1.00);
 	const float tanFov= tan(fov * 0.50);
 
 	const float halfhNear = tanFov * nearPlane;

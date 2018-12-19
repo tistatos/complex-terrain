@@ -241,6 +241,7 @@ float calculateDensity(vec3 worldPosition) {
 }
 
 float calculateAmbient(vec3 pos) {
+	return 1;
 	const int RAY_COUNT = 32;
 	float visibility = 0.0;
 	float d = 1.0 / (TEXTURE_SIZE + (2 * TEXTURE_MARGIN));

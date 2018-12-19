@@ -11,7 +11,6 @@
 #include "vertex.h"
 
 #include <iostream>
-#include <glm/gtx/string_cast.hpp>
 
 Mesh::Mesh() :
 	mVAO(-1), mVBO(-1), mIBO(-1),

@@ -7,9 +7,6 @@
 #ifndef __ENGINE_H__
 #define __ENGINE_H__
 
-//#include <stdio.h>
-//#include <stdlib.h>
-//#include <glm/glm.hpp>
 #include <GLFW/glfw3.h>
 
 #include "terrain.h"

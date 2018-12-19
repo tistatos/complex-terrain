@@ -97,8 +97,8 @@ void Chunk::endVertex() {
 	glEndTransformFeedback();
 	glEndQuery(GL_TRANSFORM_FEEDBACK_PRIMITIVES_WRITTEN);
 	glGetQueryObjectuiv(mVertexCountQuery, GL_QUERY_RESULT, &mVertexCount);
-	glBindTransformFeedback(GL_TRANSFORM_FEEDBACK, 0);
 	mEmpty = mVertexCount > 0 ? false : true;
+	glBindTransformFeedback(GL_TRANSFORM_FEEDBACK, 0);
 }
 
 //void Chunk::startIndex() {

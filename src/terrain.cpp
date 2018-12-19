@@ -13,33 +13,37 @@
 #include "shaderManager.h"
 #include "terrain.h"
 #include "utils.h"
+#include "gameTimer.h"
 
 #include <glm/gtx/string_cast.hpp>
+
 static const uint32_t CHUNK_SIZE = 32;
-static const unsigned int XZ_CHUNK_COUNT = 3;
-static const unsigned int Y_CHUNK_COUNT = 3;
+static const unsigned int XZ_CHUNK_COUNT = 25;
+static const unsigned int Y_CHUNK_COUNT = 9;
 static const unsigned int CHUNK_COUNT = XZ_CHUNK_COUNT * XZ_CHUNK_COUNT * Y_CHUNK_COUNT;
 static const uint32_t DENSITY_TEXTURE_MARGINS = 8;
 static const uint32_t DENSITY_TEXTURE_SIZE = 33;
 static const uint32_t DENSITY_TEXTURE_BOUNDS = DENSITY_TEXTURE_SIZE + 2 * DENSITY_TEXTURE_MARGINS;
 
-static const bool NEW_CHUNKS = false;
+static const bool NEW_CHUNKS = true;
 
 Terrain::Terrain() :
 	mCamera(nullptr),
 	mDensityMap(0),
 	mTriTable(0),
-	mVertexFeedbackBuffer(0),
-	mVertexFeedbackObject(0),
+	mTriangleListFeedbackObject(0),
+	mTriangleListFeedbackBuffer(0),
 	mGeoVertexArrayObject(0),
 	mGeoBuffer(0),
 	mGenVertexArrayObject(0),
 	mGenBuffer(0),
 	mEmptyChunks(0),
+	mRenderBoundingBox(false),
 	mCulledChunks(0)
 { }
 
 void Terrain::initialize(Camera* camera) {
+
 	//Set camera and get its intial chunk index position
 	mCamera = camera;
 	//Determine index of chunk camera is at
@@ -54,9 +58,10 @@ void Terrain::initialize(Camera* camera) {
 		for (unsigned int y = 0; y < CHUNK_SIZE+1; ++y)
 			for (unsigned int x = 0; x < CHUNK_SIZE+1; ++x)
 				geoPoints[z][y][x] = glm::ivec3(x,y,z);
-	//
+
 	//FIXME: we should try to avoid using this in the future
-	//Points for sampling during vertex generation
+	//Points for sampling during vertex generation since this is merely a exact copy of the one above
+	//and we should have to use it
 	glm::ivec3 genPoints[CHUNK_SIZE][CHUNK_SIZE][CHUNK_SIZE];
 	for (unsigned int z = 0; z < CHUNK_SIZE; ++z)
 		for (unsigned int y = 0; y < CHUNK_SIZE; ++y)
@@ -73,7 +78,8 @@ void Terrain::initialize(Camera* camera) {
 	glEnableVertexAttribArray(0);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glBindVertexArray(0);
-	//
+
+	//FIXME: remove this in the future
 	//Geo points used during density generation
 	glGenVertexArrays(1, &mGenVertexArrayObject);
 	glBindVertexArray(mGenVertexArrayObject);
@@ -85,23 +91,23 @@ void Terrain::initialize(Camera* camera) {
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glBindVertexArray(0);
 
-	//Vertex transform feedback
-	glGenBuffers(1, &mVertexFeedbackBuffer);
-	glBindBuffer(GL_ARRAY_BUFFER, mVertexFeedbackBuffer);
-	glBufferData(GL_ARRAY_BUFFER, 3 * sizeof(uint32_t) * (CHUNK_SIZE +1) * (CHUNK_SIZE +1) * (CHUNK_SIZE +1), nullptr, GL_DYNAMIC_COPY);
+	//Triangle list transfrom feedback
+	glGenBuffers(1, &mTriangleListFeedbackBuffer);
+	glBindBuffer(GL_ARRAY_BUFFER, mTriangleListFeedbackBuffer);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(uint32_t) * (CHUNK_SIZE +1) * (CHUNK_SIZE +1) * (CHUNK_SIZE +1), nullptr, GL_DYNAMIC_COPY);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 
-	glGenTransformFeedbacks(1, &mVertexFeedbackObject);
-	glBindTransformFeedback(GL_TRANSFORM_FEEDBACK, mVertexFeedbackObject);
-	glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, mVertexFeedbackBuffer);
+	glGenTransformFeedbacks(1, &mTriangleListFeedbackObject);
+	glBindTransformFeedback(GL_TRANSFORM_FEEDBACK, mTriangleListFeedbackObject);
+	glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, mTriangleListFeedbackBuffer);
 	glBindTransformFeedback(GL_TRANSFORM_FEEDBACK, 0);
 
-	//glGenVertexArrays(1, &mVertexFeedbackArrayObject);
-	//glBindVertexArray(mVertexFeedbackArrayObject);
-	//glBindBuffer(GL_ARRAY_BUFFER, mVertexFeedbackBuffer);
-	//glVertexAttribIPointer(0, 1, GL_UNSIGNED_INT, 0, 0);
-	//glEnableVertexAttribArray(0);
-	//glBindVertexArray(0);
+	glGenVertexArrays(1, &mTriangleListArrayObject);
+	glBindVertexArray(mTriangleListArrayObject);
+	glBindBuffer(GL_ARRAY_BUFFER, mTriangleListFeedbackBuffer);
+	glVertexAttribIPointer(0, 1, GL_UNSIGNED_INT, 0, 0);
+	glEnableVertexAttribArray(0);
+	glBindVertexArray(0);
 
 	generateTextures();
 
@@ -142,6 +148,54 @@ uint32_t Terrain::getChunkArrayIndex(const glm::vec3& position) const {
 	return idx;
 }
 
+bool Terrain::listTriangles() {
+	//Get vertex generator shader
+	Program* p = ShaderManager::getInstance()->getShader("listTriangles");
+	p->useProgram();
+
+	glEnable(GL_RASTERIZER_DISCARD);
+	glBindTransformFeedback(GL_TRANSFORM_FEEDBACK, mTriangleListFeedbackObject);
+	GLuint triangleCountQuery = 0;
+	glGenQueries(1, &triangleCountQuery);
+	glBeginQuery(GL_TRANSFORM_FEEDBACK_PRIMITIVES_WRITTEN, triangleCountQuery);
+	glBeginTransformFeedback(GL_POINTS);
+
+	glBindVertexArray(mGenVertexArrayObject);
+	const int CHUNK_OFFSET = 0;
+	glDrawArrays(GL_POINTS, 0,
+			(CHUNK_SIZE + CHUNK_OFFSET) * (CHUNK_SIZE + CHUNK_OFFSET) * (CHUNK_SIZE + CHUNK_OFFSET));
+
+	glEndTransformFeedback();
+	glEndQuery(GL_TRANSFORM_FEEDBACK_PRIMITIVES_WRITTEN);
+	GLuint triangleCount = 0;
+	glGetQueryObjectuiv(triangleCountQuery, GL_QUERY_RESULT, &triangleCount);
+	//std::cout << triangleCount << " triangle count" << std::endl;
+	glBindTransformFeedback(GL_TRANSFORM_FEEDBACK, 0);
+	glDisable(GL_RASTERIZER_DISCARD);
+
+	return triangleCount != 0;
+}
+
+void Terrain::generateVertices2(Chunk* c) {
+	Program* p = ShaderManager::getInstance()->getShader("genVertices");
+	p->useProgram();
+
+	//set value of chunk position
+	const glm::ivec3 pos = c->getPosition();
+	glUniform3f(glGetUniformLocation(*p, "chunkWorldPosition"), pos.x, pos.y, pos.z);
+
+	//skip rasterization
+	glEnable(GL_RASTERIZER_DISCARD);
+	c->fill();
+	c->startVertex();
+
+	glBindVertexArray(mTriangleListArrayObject);
+	glDrawTransformFeedback(GL_POINTS, mTriangleListFeedbackObject);
+
+	c->endVertex();
+	glBindVertexArray(0);
+	glDisable(GL_RASTERIZER_DISCARD);
+}
 
 
 void Terrain::updateChunkPositions() {
@@ -180,26 +234,34 @@ void Terrain::updateChunkPositions() {
 }
 
 void Terrain::pregenerateChunks() {
-	//invalidateChunkPositions();
 	updateChunkPositions();
 	generateChunks(false);
 }
 
 void Terrain::generateChunks(bool limit) {
-	const static uint32_t CHUNKS_PER_FRAME = 3;
+	const static uint32_t CHUNKS_PER_FRAME = 5;
 
 	glDisable(GL_DEPTH_TEST);
 	glViewport(0, 0, DENSITY_TEXTURE_BOUNDS, DENSITY_TEXTURE_BOUNDS);
-	glBindVertexArray(mGeoVertexArrayObject);
 
 	uint32_t chunksLoadedThisFrame = 0;
 	while(
 			(limit && chunksLoadedThisFrame <= CHUNKS_PER_FRAME && !mChunkLoadQueue.empty()) ||
 			(!limit && !mChunkLoadQueue.empty())) {
 		Chunk* c = mChunkLoadQueue.front();
+
 		buildDensity(c);
-		generateVertices(c);
-		chunksLoadedThisFrame++;
+		//Simple method
+		//generateVertices(c);
+		//chunksLoadedThisFrame++;
+		//mChunkLoadQueue.pop_front();
+
+		//New Chunk generation method
+		const bool chunkNotEmpty =  listTriangles();
+		if(chunkNotEmpty) {
+			generateVertices2(c);
+			chunksLoadedThisFrame++;
+		}
 		mChunkLoadQueue.pop_front();
 	}
 
@@ -213,37 +275,23 @@ void Terrain::buildDensity(Chunk* c) {
 	p->useProgram();
 	//generate density texture for this chunk
 	const glm::ivec3 pos = c->getPosition();
+	glBindVertexArray(mGeoVertexArrayObject);
 	glUniform3i(glGetUniformLocation(*p, "chunkWorldPosition"), pos.x, pos.y, pos.z);
 	glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, DENSITY_TEXTURE_BOUNDS);
-
-	//glFlush();
-	//float DensityValues[DENSITY_TEXTURE_BOUNDS * DENSITY_TEXTURE_BOUNDS * DENSITY_TEXTURE_BOUNDS];
-	//glBindTexture(GL_TEXTURE_3D, mDensityMap);
-	//glGetTexImage(GL_TEXTURE_3D, 0, GL_RED, GL_FLOAT, DensityValues);
-	//for(uint32_t i = 0; i < DENSITY_TEXTURE_BOUNDS; i++) {
-		//const glm::ivec3 chunkIndex = getChunkIndex(c->position);
-		//char filename[64];
-		//sprintf(
-				//filename, "chunk_%i_%i_%i_density_%i.ppm",
-				//chunkIndex.x, chunkIndex.y, chunkIndex.z, i);
-		//utils::SavePPMFile(filename,
-		//DENSITY_TEXTURE_BOUNDS, DENSITY_TEXTURE_BOUNDS,
-		//&DensityValues[i*DENSITY_TEXTURE_BOUNDS*DENSITY_TEXTURE_BOUNDS]);
-	//}
+	glBindVertexArray(0);
 }
 
 void Terrain::generateVertices(Chunk* c) {
-
 	//Get vertex generator shader
 	Program* p = ShaderManager::getInstance()->getShader("vertexProgram");
 	p->useProgram();
+
 	//set value of chunk position
 	const glm::ivec3 pos = c->getPosition();
 	glUniform3f(glGetUniformLocation(*p, "chunkWorldPosition"), pos.x, pos.y, pos.z);
 
 	//skip rasterization
 	glEnable(GL_RASTERIZER_DISCARD);
-	//FIXME: if we call fill here we create new buffers - running out of GPU memory
 	c->fill();
 	c->startVertex();
 	glBindVertexArray(mGenVertexArrayObject);
@@ -251,6 +299,7 @@ void Terrain::generateVertices(Chunk* c) {
 	glDrawArrays(GL_POINTS, 0,
 			(CHUNK_SIZE + CHUNK_OFFSET) * (CHUNK_SIZE + CHUNK_OFFSET) * (CHUNK_SIZE + CHUNK_OFFSET));
 	c->endVertex();
+	glBindVertexArray(0);
 	glDisable(GL_RASTERIZER_DISCARD);
 }
 
@@ -279,6 +328,7 @@ void Terrain::generateTextures() {
 
 void Terrain::createShaders() {
 	//Shader to create density pass
+	//Runs pixel shader with a 3D texture and uses simplex noise to generate data for chunks
 	Shader* instancedQuad = new Shader(
 			"../shaders/instancedQuad.vert", GL_VERTEX_SHADER);
 	Shader* densityShader = new Shader(
@@ -292,6 +342,8 @@ void Terrain::createShaders() {
 	ShaderManager::getInstance()->addShader(densityProgram);
 
 	//shader for Generating of vertices
+	// simplest and slowest approach. It samples the density pass to determine marching cube case and
+	// generates all data required for the chunk (triangles and ambient occlusion
 	Shader* genVertex = new Shader("../shaders/generateVertex.vert", GL_VERTEX_SHADER);
 	Shader* genGeometry = new Shader("../shaders/generateVertex.gs", GL_GEOMETRY_SHADER);
 	Program* vertexProgram = new Program("vertexProgram");
@@ -300,16 +352,59 @@ void Terrain::createShaders() {
 	vertexProgram->attach(genGeometry);
 
 	//Set varying data - what we want to return from the vertex shader
-	const uint32_t varyingCount = 2;
-	const char* varyings[varyingCount] = {
+	const uint32_t genVertexVaryingCount = 2;
+	const char* genVertexVaryings[genVertexVaryingCount] = {
 		"worldPosition",
 		"normal"
 	};
 
-	glTransformFeedbackVaryings(*vertexProgram, varyingCount, varyings, GL_INTERLEAVED_ATTRIBS);
+	glTransformFeedbackVaryings(*vertexProgram,
+			genVertexVaryingCount, genVertexVaryings, GL_INTERLEAVED_ATTRIBS);
 	vertexProgram->linkProgram();
 
 	ShaderManager::getInstance()->addShader(vertexProgram);
+
+	//shader for listing the triangle
+	// intermediate approach. Does only output a single 32-bit value with all information about the
+	// triangle, but does not generate anything. the data is xyz position in chunk and what edges the
+	// triangle should join to
+	Shader* listTriangleVertex = new Shader("../shaders/listTriangles.vert", GL_VERTEX_SHADER);
+	Shader* listTriangleGeometry = new Shader("../shaders/listTriangles.gs", GL_GEOMETRY_SHADER);
+	Program* listTriangleProgram = new Program("listTriangles");
+
+	listTriangleProgram->attach(listTriangleVertex);
+	listTriangleProgram->attach(listTriangleGeometry);
+
+	const uint32_t listTrianglesVaryingCount = 1;
+	const char* listTrianglesVaryings[listTrianglesVaryingCount] = {
+		"xyzEdges",
+	};
+
+	glTransformFeedbackVaryings(*listTriangleProgram,
+			listTrianglesVaryingCount, listTrianglesVaryings, GL_INTERLEAVED_ATTRIBS);
+	listTriangleProgram->linkProgram();
+
+	ShaderManager::getInstance()->addShader(listTriangleProgram);
+
+	//Shader to generate vertices from triangle list
+	// intermediate approach, second pass. Will parse the triangle list and generate vertices in the
+	// vertex shader instead of geometry shader.
+	Shader* genVertFromTriangleVertex = new Shader("../shaders/generateVertexFromTriangle.vert", GL_VERTEX_SHADER);
+	Shader* genVertFromTriangleGeometry = new Shader("../shaders/generateVertexFromTriangle.gs", GL_GEOMETRY_SHADER);
+	Program* genVertFromTriangleProgram = new Program("genVertices");
+	genVertFromTriangleProgram->attach(genVertFromTriangleVertex);
+	genVertFromTriangleProgram->attach(genVertFromTriangleGeometry);
+
+	const uint32_t genVertFromTriangleVaryingCount = 2;
+	const char* genVertFromTriangleVaryings[genVertFromTriangleVaryingCount] {
+		"worldPosition",
+		"normal"
+	};
+
+	glTransformFeedbackVaryings(*genVertFromTriangleProgram,
+			genVertFromTriangleVaryingCount, genVertFromTriangleVaryings, GL_INTERLEAVED_ATTRIBS);
+	genVertFromTriangleProgram->linkProgram();
+	ShaderManager::getInstance()->addShader(genVertFromTriangleProgram);
 
 	//final render shader
 	Shader* renderVert = new Shader( "../shaders/render.vert", GL_VERTEX_SHADER);
@@ -355,7 +450,8 @@ void Terrain::render() {
 
 		render->useProgram();
 		c->render();
-		c->renderBoundingBox();
+		if(mRenderBoundingBox)
+			c->renderBoundingBox();
 	}
 }
 

@@ -7,13 +7,14 @@
 #ifndef __GAMETIMER_H__
 #define __GAMETIMER_H__
 
-class GameTimer
-{
+class GameTimer {
 public:
 	GameTimer();
 	void tick();
-	const float getDeltaTime();
-	const float getFPS();
+	const float getDeltaTime() const;
+	void startTimer();
+	void stopTimer();
+
 private:
 	double mPrevious;
 	double mCurrent;

@@ -103,24 +103,25 @@ float calculateDensity(ivec3 blockPosition) {
 	vec3 worldPosition = vec3(blockPosition+chunkWorldPosition-vec3(16.0));
 
 	///Flat land
-	//float density = -worldPosition.y;
+	float density = -worldPosition.y;
 
 	// Sphere
-	float density = 32.0 - distance(worldPosition, vec3(0,0,0));
+	//float density = worldPosition.y <= -13 ? (-worldPosition.y - 13) :
+	//float density =	(16 - distance(worldPosition, vec3(0,0,0)));
 
-	//vec3 warp = vec3(
-			//snoise(worldPosition * 0.02),
-			//snoise((worldPosition + vec3(1.0)) * 0.01),
-			//snoise((worldPosition - vec3(1.0)) * 0.02));
+	vec3 warp = vec3(
+			snoise(worldPosition * 0.02),
+			snoise((worldPosition + vec3(1.0)) * 0.01),
+			snoise((worldPosition - vec3(1.0)) * 0.02));
 
 
-	////Final terrain density function
-	//density -= 86.9*snoise((worldPosition+warp*20)/240.0);
-	//density -= 32*snoise((worldPosition+warp*20)/80.0);
-	//density -= 22*snoise((worldPosition+warp*20)/50.0);
-	//density -= 12*snoise((worldPosition+warp*20)/25.0);
-	//density -= 6*snoise((worldPosition+warp*20)/55.0);
-	//density -= 1.0*snoise((worldPosition+warp*20)/9.0);
+	//Final terrain density function
+	density -= 86.9*snoise((worldPosition+warp*20)/240.0);
+	density -= 32*snoise((worldPosition+warp*20)/80.0);
+	density -= 22*snoise((worldPosition+warp*20)/50.0);
+	density -= 12*snoise((worldPosition+warp*20)/25.0);
+	density -= 6*snoise((worldPosition+warp*20)/55.0);
+	density -= 1.0*snoise((worldPosition+warp*20)/9.0);
 
 	return density;
 }

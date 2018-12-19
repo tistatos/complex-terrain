@@ -15,7 +15,7 @@
 
 Camera::Camera(const uint32_t width, const uint32_t height, const float fov)
 	: mWidth(width), mHeight(height), mAspect((float)mWidth/mHeight),
-	mFOV(fov), mNearPlane(1.0f), mFarPlane(1000.0f), mDetachFrustum(false) {
+	mFOV(fov), mNearPlane(1.0f), mFarPlane(500.0f), mDetachFrustum(false) {
 }
 
 Camera::~Camera() {

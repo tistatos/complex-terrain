@@ -8,8 +8,7 @@
 
 #include <GLFW/glfw3.h>
 
-GameTimer::GameTimer()
-{
+GameTimer::GameTimer() {
 	mFrames = 0;
 	mCurrent = 0.0;
 	mPrevious = 0.0;
@@ -19,8 +18,17 @@ GameTimer::GameTimer()
 
 }
 
-void GameTimer::tick()
-{
+void GameTimer::startTimer() {
+	mCurrent = glfwGetTime();
+}
+
+void GameTimer::stopTimer() {
+	mPrevious = mCurrent;
+	mCurrent = glfwGetTime();
+	mDeltaTime = (mCurrent-mPrevious);
+}
+
+void GameTimer::tick() {
 	mCurrent = glfwGetTime();
 	mDeltaTime = (mCurrent-mPrevious);
 	mPrevious = mCurrent;
@@ -36,11 +44,6 @@ void GameTimer::tick()
 	mFrames++;
 }
 
-const float GameTimer::getDeltaTime()
-{
+const float GameTimer::getDeltaTime() const {
 	return mDeltaTime*1000;
-}
-const float GameTimer::getFPS()
-{
-	return mFPS;
 }

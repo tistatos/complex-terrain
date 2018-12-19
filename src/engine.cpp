@@ -54,6 +54,7 @@ void CTEngine::mouseCallbackFunction(GLFWwindow* window, int button, int action,
  *
  * F5 = reload shaders
  * Q = toggle detached frustum for debugging
+ * B = toggle bounding boxes for debugging
  */
 void CTEngine::keyCallbackFunction(GLFWwindow* window, int key, int scancode, int action, int mods) {
 	CTEngine* engine = (CTEngine*)glfwGetWindowUserPointer(window);
@@ -63,6 +64,9 @@ void CTEngine::keyCallbackFunction(GLFWwindow* window, int key, int scancode, in
 		glfwSetWindowShouldClose(window, GL_TRUE);
 	}
 
+	if(key == GLFW_KEY_B && action == GLFW_PRESS) {
+			engine->mTerrain.toggleRenderingBoundingBox();
+	}
 	if(key == GLFW_KEY_F5 && action == GLFW_PRESS) {
 			std::cout << "Updating shaders...";
 			ShaderManager::getInstance()->updateShaders();

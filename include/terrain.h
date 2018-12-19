@@ -23,6 +23,8 @@ public:
 	void update();
 	void pregenerateChunks();
 
+	void toggleRenderingBoundingBox() { mRenderBoundingBox = !mRenderBoundingBox; }
+
 	const unsigned int getCulledChunks() const { return mCulledChunks; }
 	const unsigned int getEmptyChunks() const { return mEmptyChunks; }
 
@@ -36,10 +38,16 @@ private:
 	void markOutOfBoundChunks();
 	void updateChunkPositions();
 
+	void generateChunks(bool limit);
 	void buildDensity(Chunk* c);
+
+
+	// method 1
 	void generateVertices(Chunk* c);
 
-	void generateChunks(bool limit);
+	// method 2
+	bool listTriangles();
+	void generateVertices2(Chunk* c);
 
 	glm::ivec3 getCameraChunk() const;
 	glm::ivec3 getChunkIndex(const glm::vec3& position) const;
@@ -54,9 +62,14 @@ private:
 	GLuint mDensityMap;
 	GLuint mTriTable;
 
-	//transform feedback
-	GLuint mVertexFeedbackBuffer;
-	GLuint mVertexFeedbackObject;
+	//transform feedback for triangles
+	GLuint mTriangleListFeedbackObject;
+	GLuint mTriangleListFeedbackBuffer;
+	GLuint mTriangleListArrayObject;
+
+	//transform feedback for vertices
+	//GLuint mVertexFeedbackBuffer;
+	//GLuint mVertexFeedbackObject;
 	//GLuint mVertexFeedbackArrayObject;
 
 	//density generation points
@@ -74,6 +87,9 @@ private:
 
 	//list of chunks to be generated
 	std::deque<Chunk*> mChunkLoadQueue;
+
+	//bool settings
+	bool mRenderBoundingBox;
 
 	/*glm::vec3* mChunkPositions;*/
 };
