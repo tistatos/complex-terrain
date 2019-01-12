@@ -262,6 +262,9 @@ void Terrain::generateChunks(bool limit) {
 			generateVertices2(c);
 			chunksLoadedThisFrame++;
 		}
+		else {
+			c->setEmpty();
+		}
 		mChunkLoadQueue.pop_front();
 	}
 
@@ -447,11 +450,12 @@ void Terrain::render() {
 		if(c->isEmpty()) {
 			mEmptyChunks++;
 		}
-
-		render->useProgram();
-		c->render();
-		if(mRenderBoundingBox)
-			c->renderBoundingBox();
+		else {
+			render->useProgram();
+			c->render();
+			if(mRenderBoundingBox)
+				c->renderBoundingBox();
+		}
 	}
 }
 

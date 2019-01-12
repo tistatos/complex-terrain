@@ -36,8 +36,8 @@ public:
 	const glm::ivec3& getPosition() const { return mPosition; }
 	void setPosition(const glm::ivec3& position);
 
-	//void setEmpty();
 	void fill();
+	void setEmpty();
 
 	void startVertex();
 	void endVertex();
