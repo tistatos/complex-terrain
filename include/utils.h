@@ -1,9 +1,9 @@
 /**
-* @file utils.h
-* @author Erik Sandrén
-* @date 07-07-2018
-* @brief [Description Goes Here]
-*/
+ * @file utils.h
+ * @author Erik Sandrén
+ * @date 07-07-2018
+ * @brief Utility functions
+ */
 
 #ifndef __UTILS_H__
 #define __UTILS_H__

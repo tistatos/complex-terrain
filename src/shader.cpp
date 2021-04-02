@@ -1,27 +1,27 @@
 /**
-* @file shader.cpp
-* @author Erik Sandrén
-* @date 21-12-2015
-* @brief Shader Class
-*/
+ * @file shader.cpp
+ * @author Erik Sandrén
+ * @date 21-12-2015
+ * @brief Shader Class
+ */
 
 #include "shader.h"
 #include <iostream>
-long filelength(FILE *file) {
+long filelength(FILE* file) {
 	long numbytes;
-	long savedpos = ftell(file); // Remember where we are
-	fseek(file, 0, SEEK_END);    // Fast forward to the end
-	numbytes = ftell(file);      // Index of last byte in file
+	long savedpos = ftell(file);		 // Remember where we are
+	fseek(file, 0, SEEK_END);				 // Fast forward to the end
+	numbytes = ftell(file);					 // Index of last byte in file
 	fseek(file, savedpos, SEEK_SET); // Get back to where we were
 
-	return numbytes;             // This is the file length
+	return numbytes; // This is the file length
 }
 
-//TODO: avoid reading file here since we can crash if the file is not available
+// TODO: avoid reading file here since we can crash if the file is not available
 Shader::Shader(const char* path, GLenum shaderType) {
 	mShaderID = glCreateShader(shaderType);
 	mShaderPath = path;
-	const char* source =  readSource(path);
+	const char* source = readSource(path);
 	compileShader(source);
 	getCompileErrors();
 }
@@ -37,19 +37,17 @@ void Shader::reloadShader() {
 	getCompileErrors();
 }
 
-Shader::~Shader() {
-	glDeleteShader(mShaderID);
-}
+Shader::~Shader() { glDeleteShader(mShaderID); }
 
 const char* Shader::readSource(const char* filename) {
-	FILE *file = fopen(filename, "r");
-	if(file == NULL) {
+	FILE* file = fopen(filename, "r");
+	if (file == NULL) {
 		std::cout << "error finding file: " << filename << std::endl;
 		return 0;
 	}
 	int bytesinfile = filelength(file);
-	char *buffer = (char*)malloc(bytesinfile+1);
-	int bytesread = fread( buffer, 1, bytesinfile, file);
+	char* buffer = (char*)malloc(bytesinfile + 1);
+	int bytesread = fread(buffer, 1, bytesinfile, file);
 	buffer[bytesread] = 0; // Terminate the string with 0
 	fclose(file);
 	return buffer;
@@ -77,7 +75,7 @@ Program::Program(std::string name) {
 
 Program::~Program() {
 	std::vector<Shader*>::iterator iter = mAttachedShaders.begin();
-	for(; iter != mAttachedShaders.end(); ++iter) {
+	for (; iter != mAttachedShaders.end(); ++iter) {
 		delete (*iter);
 	}
 }
@@ -90,7 +88,7 @@ void Program::linkProgram() {
 void Program::getLinkingError() {
 	GLint status = 0;
 	glGetProgramiv(mProgramID, GL_LINK_STATUS, &status);
-	if(status == GL_TRUE)
+	if (status == GL_TRUE)
 		return;
 
 	char log[4096];
@@ -100,7 +98,7 @@ void Program::getLinkingError() {
 }
 
 void Program::attach(Shader* s) {
-	if(mProgramID == 0)
+	if (mProgramID == 0)
 		mProgramID = glCreateProgram();
 	glAttachShader(mProgramID, s->getID());
 	mAttachedShaders.push_back(s);
@@ -108,8 +106,7 @@ void Program::attach(Shader* s) {
 
 void Program::reload() {
 	std::vector<Shader*>::iterator iter = mAttachedShaders.begin();
-	for(;iter != mAttachedShaders.end(); ++iter)
-	{
+	for (; iter != mAttachedShaders.end(); ++iter) {
 		(*iter)->reloadShader();
 		linkProgram();
 	}

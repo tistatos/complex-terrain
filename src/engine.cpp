@@ -1,53 +1,47 @@
 /**
-* @file engine.cpp
-* @author Erik Sandrén
-* @date 15-12-2015
-* @brief Complex terrain engine
-*/
+ * @file engine.cpp
+ * @author Erik Sandrén
+ * @date 15-12-2015
+ * @brief Complex terrain engine
+ */
 #include <GL/glew.h>
-#include <glm/gtx/string_cast.hpp>
 #include <glm/gtx/rotate_vector.hpp>
+#include <glm/gtx/string_cast.hpp>
 #include <iostream>
 
-#include "engine.h"
-#include "shaderManager.h"
-#include "gui.h"
-#include "cube.h"
-#include "entity.h"
 #include "camera.h"
+#include "cube.h"
+#include "engine.h"
+#include "entity.h"
+#include "gui.h"
 #include "shader.h"
+#include "shaderManager.h"
 
 class OpenGLDebugger {
 public:
-static void GLAPIENTRY
-	MessageCallback( GLenum source,
-									 GLenum type,
-									 GLuint id,
-									 GLenum severity,
-									 GLsizei length,
-									 const GLchar* message,
-									 const void* userParam )
-	{
-		if(type == GL_DEBUG_TYPE_ERROR)
-			fprintf( stderr, "GL CALLBACK: %s source = 0x%x, type = 0x%x, severity = 0x%x, message = %s\n",
-										 ( type == GL_DEBUG_TYPE_ERROR ? "** GL ERROR **" : "" ),
-																 type, source, severity, message );
+	static void GLAPIENTRY MessageCallback(GLenum source, GLenum type, GLuint id, GLenum severity,
+																				 GLsizei length, const GLchar* message,
+																				 const void* userParam) {
+		if (type == GL_DEBUG_TYPE_ERROR)
+			fprintf(stderr, "GL CALLBACK: %s source = 0x%x, type = 0x%x, severity = 0x%x, message = %s\n",
+							(type == GL_DEBUG_TYPE_ERROR ? "** GL ERROR **" : ""), type, source, severity,
+							message);
 	}
 };
 
 void CTEngine::mouseCallbackFunction(GLFWwindow* window, int button, int action, int mods) {
 	CTEngine* engine = (CTEngine*)glfwGetWindowUserPointer(window);
 
-	if(button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_PRESS) {
+	if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_PRESS) {
 		int mode = glfwGetInputMode(window, GLFW_CURSOR);
-		if(mode == GLFW_CURSOR_DISABLED)
+		if (mode == GLFW_CURSOR_DISABLED) {
 			glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-		else
+		} else {
 			glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+		}
 		engine->mCaptureCursor = !engine->mCaptureCursor;
 	}
 }
-
 
 /**
  * @brief
@@ -56,61 +50,57 @@ void CTEngine::mouseCallbackFunction(GLFWwindow* window, int button, int action,
  * Q = toggle detached frustum for debugging
  * B = toggle bounding boxes for debugging
  */
-void CTEngine::keyCallbackFunction(GLFWwindow* window, int key, int scancode, int action, int mods) {
+void CTEngine::keyCallbackFunction(GLFWwindow* window, int key, int scancode, int action,
+																	 int mods) {
 	CTEngine* engine = (CTEngine*)glfwGetWindowUserPointer(window);
 
-	if(key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
+	if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
 		engine->stopRunning();
 		glfwSetWindowShouldClose(window, GL_TRUE);
 	}
 
-	if(key == GLFW_KEY_B && action == GLFW_PRESS) {
-			engine->mTerrain.toggleRenderingBoundingBox();
-	}
-	if(key == GLFW_KEY_F5 && action == GLFW_PRESS) {
-			std::cout << "Updating shaders...";
-			ShaderManager::getInstance()->updateShaders();
-			std::cout << "Done!" << std::endl;
-			engine->mTerrain.pregenerateChunks();
+	if (key == GLFW_KEY_B && action == GLFW_PRESS) {
+		engine->mTerrain.toggleRenderingBoundingBox();
 	}
 
-	if(key == GLFW_KEY_Q && action == GLFW_PRESS) {
+	if (key == GLFW_KEY_F5 && action == GLFW_PRESS) {
+		std::cout << "Updating shaders...";
+		ShaderManager::getInstance()->updateShaders();
+		std::cout << "Done!" << std::endl;
+		engine->mTerrain.pregenerateChunks();
+	}
+
+	if (key == GLFW_KEY_Q && action == GLFW_PRESS) {
 		engine->mDetachCameraFrustum = !engine->mDetachCameraFrustum;
 		engine->mCamera->detachFrustum(engine->mDetachCameraFrustum);
-		if(engine->mDetachCameraFrustum) {
+
+		if (engine->mDetachCameraFrustum) {
 			std::cout << "Detaching camera frustum..." << std::endl;
-		}
-		else {
+		} else {
 			std::cout << "reattaching camera frustum..." << std::endl;
 		}
 	}
 }
 
-
-
 CTEngine::CTEngine(const char* name)
-	: mCaptureCursor(true)
-	, mDetachCameraFrustum(false)
-	, mMovementSpeed(1.0f)
-	, mLookSpeed(10.0f)
-	{
+		: mCaptureCursor(true), mDetachCameraFrustum(false), mMovementSpeed(1.0f), mLookSpeed(10.0f) {
 	mRunning = false;
 	sprintf(mTitle, "%s", name);
 }
 
 bool CTEngine::initialize() {
-	//Initialize glfw
-	if(!glfwInit())
+	// Initialize glfw
+	if (!glfwInit())
 		return false;
 
-	//Create window
+	// Create window
 	mMonitor = glfwGetPrimaryMonitor();
 	vidmode = glfwGetVideoMode(mMonitor);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 
-	mWidth = vidmode->width/1;
-	mHeight = vidmode->height/1;
+	mWidth = vidmode->width / 1;
+	mHeight = vidmode->height / 1;
 	mWindow = glfwCreateWindow(mWidth, mHeight, mTitle, NULL, NULL);
 	glfwSetWindowUserPointer(mWindow, this);
 
@@ -125,52 +115,51 @@ bool CTEngine::initialize() {
 	glfwSetInputMode(mWindow, GLFW_STICKY_KEYS, 1);
 	glfwSetKeyCallback(mWindow, CTEngine::keyCallbackFunction);
 	glfwSetMouseButtonCallback(mWindow, CTEngine::mouseCallbackFunction);
-	//Initialize glew
+	// Initialize glew
 	glewExperimental = GL_TRUE;
 	glewInit();
 
 	// During init, enable debug output
-	//glEnable              ( GL_DEBUG_OUTPUT );
-	glDebugMessageCallback( OpenGLDebugger::MessageCallback, 0 );
+	glEnable(GL_DEBUG_OUTPUT);
+	glDebugMessageCallback(OpenGLDebugger::MessageCallback, 0);
 
-	//get initial position of mouse
+	// get initial position of mouse
 	glfwGetCursorPos(mWindow, &mPreviousMouseX, &mPreviousMouseY);
 
-
-	//Setup camera
+	// Setup camera
 	mCamera = new Camera(vidmode->width, vidmode->height, 45.0f);
 	mCamera->initialize();
 
-	//Create gui
+	// Create gui
 	mGUI = new GUI();
-	if(!mGUI->initialize()) {
+	if (!mGUI->initialize()) {
 		return false;
 	}
 
-	//Simple cube shader
+	// Simple cube shader
 	Shader* cubeVertexShader = new Shader("../shaders/cube.vert", GL_VERTEX_SHADER);
-	Shader* cubeFragmentShader  = new Shader("../shaders/cube.frag", GL_FRAGMENT_SHADER);
+	Shader* cubeFragmentShader = new Shader("../shaders/cube.frag", GL_FRAGMENT_SHADER);
 	Program* cubeProgram = new Program("simpleCube");
 	cubeProgram->attach(cubeVertexShader);
 	cubeProgram->attach(cubeFragmentShader);
 	cubeProgram->linkProgram();
 	ShaderManager::getInstance()->addShader(cubeProgram);
 
-	//bounding box shader
-	Shader* boundingBoxVert = new Shader( "../shaders/boundingbox.vert", GL_VERTEX_SHADER);
-	Shader* boundingBoxFrag = new Shader( "../shaders/boundingbox.frag", GL_FRAGMENT_SHADER);
-	Program* boundingBoxProgram  = new Program("bbox");
+	// bounding box shader
+	Shader* boundingBoxVert = new Shader("../shaders/boundingbox.vert", GL_VERTEX_SHADER);
+	Shader* boundingBoxFrag = new Shader("../shaders/boundingbox.frag", GL_FRAGMENT_SHADER);
+	Program* boundingBoxProgram = new Program("bbox");
 	boundingBoxProgram->attach(boundingBoxVert);
 	boundingBoxProgram->attach(boundingBoxFrag);
 	boundingBoxProgram->linkProgram();
 	ShaderManager::getInstance()->addShader(boundingBoxProgram);
 
-	//Simple cube
+	// Simple cube
 	mCube = new Cube(*cubeProgram);
 	mCube->setPosition(glm::vec3(0.0f, 0.0f, 0.0f));
 
-	//initialize Terrain
-	//will generate the initial chunks
+	// initialize Terrain
+	// will generate the initial chunks
 	GameTimer generateTerrain;
 	generateTerrain.startTimer();
 	mTerrain.initialize(mCamera);
@@ -187,7 +176,7 @@ bool CTEngine::initialize() {
 void CTEngine::run() {
 	double dt;
 
-	while(running()) {
+	while (running()) {
 		mTimer.tick();
 		dt = mTimer.getDeltaTime();
 
@@ -200,7 +189,7 @@ void CTEngine::update(double dt) {
 	glfwPollEvents();
 	char title[64];
 	mFPSCounter.calculateFPS(dt);
-	sprintf(title,"%s, %.2f FPS %.4f ms", mTitle, mFPSCounter.latestCount, dt);
+	sprintf(title, "%s, %.2f FPS %.4f ms", mTitle, mFPSCounter.latestCount, dt);
 	glfwSetWindowTitle(mWindow, title);
 
 	double mouseX, mouseY;
@@ -215,18 +204,20 @@ void CTEngine::update(double dt) {
 	Camera* cam = this->mCamera;
 
 	float cameraSpeed = 1.0f;
-	if(glfwGetKey(mWindow, GLFW_KEY_LEFT_SHIFT))
+	if (glfwGetKey(mWindow, GLFW_KEY_LEFT_SHIFT))
 		cameraSpeed *= 3.0f;
-	if(glfwGetKey(mWindow, GLFW_KEY_W))
+	if (glfwGetKey(mWindow, GLFW_KEY_W))
 		cam->translate(cameraSpeed * cam->getFacing());
-	if(glfwGetKey(mWindow, GLFW_KEY_S))
+	if (glfwGetKey(mWindow, GLFW_KEY_S))
 		cam->translate(-cameraSpeed * cam->getFacing());
-	if(glfwGetKey(mWindow, GLFW_KEY_A))
-		cam->translate(-glm::normalize(glm::cross(cam->getFacing(), glm::vec3(0.f,1.0f,0.0f))) * cameraSpeed);
-	if(glfwGetKey(mWindow, GLFW_KEY_D))
-		cam->translate(glm::normalize(glm::cross(cam->getFacing(), glm::vec3(0.f,1.0f,0.0f))) * cameraSpeed);
+	if (glfwGetKey(mWindow, GLFW_KEY_A))
+		cam->translate(-glm::normalize(glm::cross(cam->getFacing(), glm::vec3(0.f, 1.0f, 0.0f))) *
+									 cameraSpeed);
+	if (glfwGetKey(mWindow, GLFW_KEY_D))
+		cam->translate(glm::normalize(glm::cross(cam->getFacing(), glm::vec3(0.f, 1.0f, 0.0f))) *
+									 cameraSpeed);
 
-	if(mCaptureCursor) {
+	if (mCaptureCursor) {
 		float rotatespeed = 0.005f;
 		glm::vec3 facing = glm::rotateY(mCamera->getFacing(), -(float)mouseDeltaX * rotatespeed);
 		facing.y -= rotatespeed * mouseDeltaY;
@@ -248,7 +239,7 @@ void CTEngine::render(double dt) {
 
 	mCube->render(dt);
 	mTerrain.render();
-	if(mCamera->frustumDetached()) {
+	if (mCamera->frustumDetached()) {
 		mCamera->renderFrustum();
 	}
 
@@ -258,28 +249,26 @@ void CTEngine::render(double dt) {
 	char camRotText[64];
 	unsigned int culled, empty;
 
-	sprintf(camPosText,"pos(%.3f,%.3f, %.3f)", camPos.x, camPos.y, camPos.z);
-	sprintf(camRotText,"dir(%.3f, %.3f, %.3f)", camRot.x, camRot.y, camRot.z);
+	sprintf(camPosText, "pos(%.3f,%.3f, %.3f)", camPos.x, camPos.y, camPos.z);
+	sprintf(camRotText, "dir(%.3f, %.3f, %.3f)", camRot.x, camRot.y, camRot.z);
 	std::string cameraString = std::string("Camera: ") + camPosText + " " + camRotText;
-	mGUI->renderText(cameraString, 5.0f, vidmode->height-15.0f, 1.0f, glm::vec3(1.0f, 1.0f, 1.0f));
+	mGUI->renderText(cameraString, 5.0f, vidmode->height - 15.0f, 1.0f, glm::vec3(1.0f, 1.0f, 1.0f));
 
 	empty = mTerrain.getEmptyChunks();
 	culled = mTerrain.getCulledChunks();
 
 	GLint nTotalMemoryInKB = 0;
-	glGetIntegerv( GL_GPU_MEM_INFO_TOTAL_AVAILABLE_MEM_NVX,
-                       &nTotalMemoryInKB );
+	glGetIntegerv(GL_GPU_MEM_INFO_TOTAL_AVAILABLE_MEM_NVX, &nTotalMemoryInKB);
 
 	GLint nCurAvailMemoryInKB = 0;
-	glGetIntegerv( GL_GPU_MEM_INFO_CURRENT_AVAILABLE_MEM_NVX,
-                       &nCurAvailMemoryInKB );
+	glGetIntegerv(GL_GPU_MEM_INFO_CURRENT_AVAILABLE_MEM_NVX, &nCurAvailMemoryInKB);
 	char memory[64];
-	sprintf(memory,"GPU memory: %d MB / %d MB", nCurAvailMemoryInKB / 1000, nTotalMemoryInKB / 1000);
-	mGUI->renderText(memory, 5.0f, vidmode->height-35.0f, 1.0f, glm::vec3(1.0f, 1.0f, 1.0f));
+	sprintf(memory, "GPU memory: %d MB / %d MB", nCurAvailMemoryInKB / 1000, nTotalMemoryInKB / 1000);
+	mGUI->renderText(memory, 5.0f, vidmode->height - 35.0f, 1.0f, glm::vec3(1.0f, 1.0f, 1.0f));
 
 	char cullempty[64];
-	sprintf(cullempty,"Chunks culled/empty: %d / %d ", culled, empty);
-	mGUI->renderText(cullempty, 5.0f, vidmode->height-45.0f, 1.0f, glm::vec3(1.0f, 1.0f, 1.0f));
+	sprintf(cullempty, "Chunks culled/empty: %d / %d ", culled, empty);
+	mGUI->renderText(cullempty, 5.0f, vidmode->height - 45.0f, 1.0f, glm::vec3(1.0f, 1.0f, 1.0f));
 
 	glfwSwapBuffers(mWindow);
 }

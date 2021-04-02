@@ -1,16 +1,16 @@
 /**
-* @file engine.h
-* @author Erik Sandrén
-* @date 13-12-2015
-* @brief complex terrain engine
-*/
+ * @file engine.h
+ * @author Erik Sandrén
+ * @date 13-12-2015
+ * @brief complex terrain engine
+ */
 #ifndef __ENGINE_H__
 #define __ENGINE_H__
 
 #include <GLFW/glfw3.h>
 
-#include "terrain.h"
 #include "gameTimer.h"
+#include "terrain.h"
 
 #define GL_GPU_MEM_INFO_TOTAL_AVAILABLE_MEM_NVX 0x9048
 #define GL_GPU_MEM_INFO_CURRENT_AVAILABLE_MEM_NVX 0x9049
@@ -24,12 +24,12 @@ struct FPSCounter {
 	int frameCount;
 	double latestCount;
 
-	FPSCounter() : timePassed(0), frameCount(0), latestCount(0) { }
+	FPSCounter() : timePassed(0), frameCount(0), latestCount(0) {}
 
 	void calculateFPS(double dt) {
 		timePassed += dt;
 		frameCount++;
-		if(timePassed > 1000.0) {
+		if (timePassed > 1000.0) {
 			latestCount = (double)frameCount / (timePassed / 1000.0);
 			timePassed = 0.0;
 			frameCount = 0;
@@ -54,6 +54,7 @@ public:
 
 	static void keyCallbackFunction(GLFWwindow* window, int key, int scancode, int action, int mods);
 	static void mouseCallbackFunction(GLFWwindow* window, int key, int action, int mods);
+
 private:
 	Camera* mCamera;
 	Terrain mTerrain;

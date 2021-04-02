@@ -1,16 +1,16 @@
 /**
-* @file chunk.h
-* @author Erik Sandrén
-* @date 29-07-2016
-* @brief Complex Terrain Chunk
-*/
+ * @file chunk.h
+ * @author Erik Sandrén
+ * @date 29-07-2016
+ * @brief Complex Terrain Chunk
+ */
 
 #ifndef __CHUNK_H__
 #define __CHUNK_H__
 
+#include <glm/mat4x4.hpp>
 #include <glm/vec3.hpp>
 #include <glm/vec4.hpp>
-#include <glm/mat4x4.hpp>
 
 #include "AABBox.h"
 #include "mesh.h"
@@ -22,15 +22,15 @@ typedef struct chunkVertex {
 
 class Chunk {
 public:
-	//static const uint32_t CHUNK_SIZE = 32;
+	// static const uint32_t CHUNK_SIZE = 32;
 	static const uint32_t MAX_VERTICES = 33 * 33 * 33;
-	//static const uint32_t MAX_INDICIES = 32 * 32 * 32 * 15;
+	// static const uint32_t MAX_INDICIES = 32 * 32 * 32 * 15;
 
 	Chunk();
 
 	void render();
 
-	void renderBoundingBox();
+	void renderBoundingBox() const;
 	const AABBox& getBoundingBox() const { return mBoundingBox; }
 
 	const glm::ivec3& getPosition() const { return mPosition; }
@@ -41,11 +41,12 @@ public:
 
 	void startVertex();
 	void endVertex();
-	//void startIndex();
-	//void endIndex();
+	// void startIndex();
+	// void endIndex();
 
-	bool isEmpty() { return mEmpty; }
+	bool isEmpty() const { return mEmpty; }
 
+	int distanceToChunk(const glm::ivec3& pos) const;
 
 private:
 	void generateBuffers();
@@ -58,15 +59,14 @@ private:
 	GLuint mVertexFeedback;
 	GLuint mVertexCountQuery;
 
-
-	//unsigned int mIndexCount;
-	//GLuint mIndexQuery;
-	//GLuint mIndexBuffer;
-	//GLuint mIndexFeedback;
+	// unsigned int mIndexCount;
+	// GLuint mIndexQuery;
+	// GLuint mIndexBuffer;
+	// GLuint mIndexFeedback;
 
 	AABBox mBoundingBox;
-	//GLuint mBoundingBoxArray;
-	//GLuint mBoundingBoxBuffer;
+	// GLuint mBoundingBoxArray;
+	// GLuint mBoundingBoxBuffer;
 
 	Mesh mBoundingBoxMesh;
 

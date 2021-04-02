@@ -120,7 +120,12 @@ void Chunk::render() {
 	glDrawArrays(GL_TRIANGLES, 0, mVertexCount);
 }
 
-void Chunk::renderBoundingBox() {
+int Chunk::distanceToChunk(const glm::ivec3& pos) const {
+	glm::ivec3 dist = glm::abs(mPosition-pos);
+	return dist.x + dist.y + dist.z;
+}
+
+void Chunk::renderBoundingBox() const {
 	Program* bb = ShaderManager::getInstance()->getShader("bbox");
 	bb->useProgram();
 	glm::mat4 m;

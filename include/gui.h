@@ -1,15 +1,15 @@
 /**
-* @file gui.h
-* @author Erik Sandrén
-* @date 14-08-2016
-* @brief [Description Goes Here]
-*/
+ * @file gui.h
+ * @author Erik Sandrén
+ * @date 14-08-2016
+ * @brief GUI or top left hud
+ */
 
 #ifndef __GUI_H__
 #define __GUI_H__
 
-#include <GL/glew.h>
 #include "glm/glm.hpp"
+#include <GL/glew.h>
 
 #include "shader.h"
 
@@ -28,7 +28,8 @@ class GUI {
 public:
 	GUI();
 	bool initialize();
-	void renderText(std::string text, GLfloat x, GLfloat y, GLfloat scale, glm::vec3 color = glm::vec3(1.0, 1.0, 1.0));
+	void renderText(std::string text, GLfloat x, GLfloat y, GLfloat scale,
+									glm::vec3 color = glm::vec3(1.0, 1.0, 1.0));
 
 private:
 	void loadCharacters();

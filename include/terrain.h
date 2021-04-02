@@ -1,15 +1,15 @@
 /**
-* @file terrain.h
-* @author Erik Sandrén
-* @date 07-08-2016
-* @brief [Description Goes Here]
-*/
+ * @file terrain.h
+ * @author Erik Sandrén
+ * @date 07-08-2016
+ * @brief Complex terrain
+ */
 
 #ifndef __TERRAIN_H__
 #define __TERRAIN_H__
 
-#include <glm/glm.hpp>
 #include <GL/glew.h>
+#include <glm/glm.hpp>
 #include <queue>
 
 class Chunk;
@@ -53,46 +53,45 @@ private:
 	glm::ivec3 getChunkIndex(const glm::vec3& position) const;
 	uint32_t getChunkArrayIndex(const glm::vec3& position) const;
 
-	//camera
+	// camera
 	Camera* mCamera;
 	glm::vec3 mLastCameraPosition;
 	glm::ivec3 mCameraChunk;
 
-	//textures
+	// textures
 	GLuint mDensityMap;
 	GLuint mTriTable;
 
-	//transform feedback for triangles
+	// transform feedback for triangles
 	GLuint mTriangleListFeedbackObject;
 	GLuint mTriangleListFeedbackBuffer;
 	GLuint mTriangleListArrayObject;
 
-	//transform feedback for vertices
-	//GLuint mVertexFeedbackBuffer;
-	//GLuint mVertexFeedbackObject;
-	//GLuint mVertexFeedbackArrayObject;
+	// transform feedback for vertices
+	// GLuint mVertexFeedbackBuffer;
+	// GLuint mVertexFeedbackObject;
+	// GLuint mVertexFeedbackArrayObject;
 
-	//density generation points
+	// density generation points
 	GLuint mGeoVertexArrayObject;
 	GLuint mGeoBuffer;
 
-	//Vertex generation points
+	// Vertex generation points
 	GLuint mGenVertexArrayObject;
 	GLuint mGenBuffer;
 
-	//list of all chunks
+	// list of all chunks
 	Chunk* mChunkList;
 	unsigned int mEmptyChunks;
 	unsigned int mCulledChunks;
 
-	//list of chunks to be generated
+	// list of chunks to be generated
 	std::deque<Chunk*> mChunkLoadQueue;
 
-	//bool settings
+	// bool settings
 	bool mRenderBoundingBox;
 
 	/*glm::vec3* mChunkPositions;*/
 };
-
 
 #endif

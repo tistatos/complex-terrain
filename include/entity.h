@@ -1,9 +1,9 @@
 /**
-* @file entity.h
-* @author Erik Sandrén
-* @date 29-07-2016
-* @brief Entity within the CTEngine
-*/
+ * @file entity.h
+ * @author Erik Sandrén
+ * @date 29-07-2016
+ * @brief Entity within the CTEngine
+ */
 
 #ifndef __ENTITY_H__
 #define __ENTITY_H__

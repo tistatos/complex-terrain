@@ -1,15 +1,15 @@
 /**
-* @file camera.h
-* @author Erik Sandrén
-* @date 20-12-2015
-* @brief Camera clas
-*/
+ * @file camera.h
+ * @author Erik Sandrén
+ * @date 20-12-2015
+ * @brief Camera clas
+ */
 
 #ifndef __CAMERA_H__
 #define __CAMERA_H__
 
-#include <GL/glew.h>
 #include "glm/glm.hpp"
+#include <GL/glew.h>
 
 #include "entity.h"
 #include "frustum.h"
@@ -36,9 +36,9 @@ public:
 	void initialize();
 	void setProjectionMatrix(glm::mat4 proj);
 
-	//glm::mat4 getViewMatrix();
-	//glm::mat4 getProjectionMatrix() { return matrices.projection; }
-	//glm::mat4 getViewProjectionMatrix();
+	// glm::mat4 getViewMatrix();
+	// glm::mat4 getProjectionMatrix() { return matrices.projection; }
+	// glm::mat4 getViewProjectionMatrix();
 
 	void update(double dt);
 
@@ -51,7 +51,7 @@ public:
 
 	void renderFrustum() const;
 
-	//Debugging purpose
+	// Debugging purpose
 	bool frustumDetached() const { return mDetachFrustum; }
 	void detachFrustum(bool status);
 

@@ -1,9 +1,9 @@
 /**
-* @file gameTimer.h
-* @author Erik Sandrén
-* @date 15-12-2015
-* @brief Game timer
-*/
+ * @file gameTimer.h
+ * @author Erik Sandrén
+ * @date 15-12-2015
+ * @brief Game timer
+ */
 #ifndef __GAMETIMER_H__
 #define __GAMETIMER_H__
 
