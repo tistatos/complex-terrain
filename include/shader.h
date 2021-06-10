@@ -8,8 +8,9 @@
 #ifndef __SHADER_H__
 #define __SHADER_H__
 
-#include <GL/gl.h>
 #include <GL/glew.h>
+
+#include <GL/gl.h>
 #include <iostream>
 #include <stdio.h>
 #include <stdlib.h>
