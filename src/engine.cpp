@@ -187,7 +187,7 @@ void CTEngine::run() {
 
 void CTEngine::update(double dt) {
 	glfwPollEvents();
-	char title[64];
+	char title[128];
 	mFPSCounter.calculateFPS(dt);
 	sprintf(title, "%s, %.2f FPS %.4f ms", mTitle, mFPSCounter.latestCount, dt);
 	glfwSetWindowTitle(mWindow, title);
@@ -247,12 +247,14 @@ void CTEngine::render(double dt) {
 	glm::vec3 camRot = mCamera->getFacing();
 	char camPosText[64];
 	char camRotText[64];
+	char fps[64];
 	unsigned int culled, empty;
 
 	sprintf(camPosText, "pos(%.3f,%.3f, %.3f)", camPos.x, camPos.y, camPos.z);
 	sprintf(camRotText, "dir(%.3f, %.3f, %.3f)", camRot.x, camRot.y, camRot.z);
 	std::string cameraString = std::string("Camera: ") + camPosText + " " + camRotText;
-	mGUI->renderText(cameraString, 5.0f, vidmode->height - 15.0f, 1.0f, glm::vec3(1.0f, 1.0f, 1.0f));
+	mGUI->renderText(cameraString, 5.0f, vidmode->height - 20.0f, 1.0f, glm::vec3(1.0f, 1.0f, 1.0f));
+	sprintf(fps, "%.2f FPS %.4f ms", mFPSCounter.latestCount, dt);
 
 	empty = mTerrain.getEmptyChunks();
 	culled = mTerrain.getCulledChunks();
@@ -263,13 +265,15 @@ void CTEngine::render(double dt) {
 	GLint nCurAvailMemoryInKB = 0;
 	glGetIntegerv(GL_GPU_MEM_INFO_CURRENT_AVAILABLE_MEM_NVX, &nCurAvailMemoryInKB);
 	char memory[64];
-	sprintf(memory, "GPU memory: %d MB / %d MB", nCurAvailMemoryInKB / 1000, nTotalMemoryInKB / 1000);
+	sprintf(memory, "GPU Memory(Avail/Total): %d MB / %d MB", nCurAvailMemoryInKB / 1000,
+					nTotalMemoryInKB / 1000);
 	mGUI->renderText(memory, 5.0f, vidmode->height - 35.0f, 1.0f, glm::vec3(1.0f, 1.0f, 1.0f));
 
 	char cullempty[64];
 	sprintf(cullempty, "Chunks culled/empty: %d / %d ", culled, empty);
-	mGUI->renderText(cullempty, 5.0f, vidmode->height - 45.0f, 1.0f, glm::vec3(1.0f, 1.0f, 1.0f));
+	mGUI->renderText(cullempty, 5.0f, vidmode->height - 50.0f, 1.0f, glm::vec3(1.0f, 1.0f, 1.0f));
 
+	mGUI->renderText(fps, 5.0f, vidmode->height - 65.0f, 1.0f, glm::vec3(1.0f, 1.0f, 1.0f));
 	glfwSwapBuffers(mWindow);
 }
 
